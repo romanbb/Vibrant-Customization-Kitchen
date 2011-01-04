@@ -6,9 +6,10 @@
 package vck;
 
 import java.awt.Toolkit;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -18,10 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import javax.swing.JCheckBox;
-import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
 /**
@@ -30,15 +28,26 @@ import javax.swing.UIManager;
  */
 public class Apps extends javax.swing.JFrame {
 
-    ArrayList<String> sources = new ArrayList<String>();
-    boolean useSystem, useData, useLib, wipeDalvik;
+    static ArrayList<String> sources = new ArrayList<String>();
+    static boolean useSystem, useData, useLib, wipeDalvik;
+    static Apps instance;
 
     public Apps() {
+        if (instance == null) {
+            instance = this;
+        }
         initComponents();
-
+        Apps.getInstance().zipProgress.setVisible(false);
     }
 
-    private void createDirectories() {
+    public static Apps getInstance() {
+        if (instance == null) {
+            instance = new Apps();
+        }
+        return instance;
+    }
+
+    private static void createDirectories() {
         new File("system/app").mkdirs();
         new File("data/app").mkdirs();
         new File("system/lib").mkdirs();
@@ -49,13 +58,13 @@ public class Apps extends javax.swing.JFrame {
         addApp("kitchen/META-INF/MANIFEST.MF", "META-INF/MANIFEST.MF");
     }
 
-    private void cleanUp() {
+    private static void cleanUp() {
         deleteDir(new File("system"));
         deleteDir(new File("data"));
         deleteDir(new File("META-INF"));
     }
 
-    private void createUpdateScript() {
+    public static void createUpdateScript() {
         //check whether to use data and system
         for (String entry : sources) {
             if (!useData && entry.startsWith("data")) {
@@ -128,6 +137,7 @@ public class Apps extends javax.swing.JFrame {
     private void initComponents() {
 
         MmsGroup = new javax.swing.ButtonGroup();
+        ModemGroup = new javax.swing.ButtonGroup();
         generateZipButton = new javax.swing.JButton();
         jTabbedPane1 = new javax.swing.JTabbedPane();
         utilitiesPanel = new javax.swing.JPanel();
@@ -136,22 +146,6 @@ public class Apps extends javax.swing.JFrame {
         utilitiesRomManagerButton = new javax.swing.JCheckBox();
         utilitiesSpareParts = new javax.swing.JCheckBox();
         utilitiesSgsTools = new javax.swing.JCheckBox();
-        jPanel1 = new javax.swing.JPanel();
-        vibrantAllShare = new javax.swing.JCheckBox();
-        vibrantAvatar = new javax.swing.JCheckBox();
-        vibrantMediahub = new javax.swing.JCheckBox();
-        vibrantWriteandGo = new javax.swing.JCheckBox();
-        vibrantGogo = new javax.swing.JCheckBox();
-        vibrantLayar = new javax.swing.JCheckBox();
-        vibrantMiniDiary = new javax.swing.JCheckBox();
-        vibrantKindle = new javax.swing.JCheckBox();
-        vibrantAmazon = new javax.swing.JCheckBox();
-        vibrantMemo = new javax.swing.JCheckBox();
-        vibrantWifiCalling = new javax.swing.JCheckBox();
-        vibrantTmoTv = new javax.swing.JCheckBox();
-        jCheckBox2 = new javax.swing.JCheckBox();
-        vibrantVisualVoicemail = new javax.swing.JCheckBox();
-        jCheckBox4 = new javax.swing.JCheckBox();
         jPanel4 = new javax.swing.JPanel();
         launchersLauncherPro = new javax.swing.JCheckBox();
         launchersAdw = new javax.swing.JCheckBox();
@@ -169,12 +163,40 @@ public class Apps extends javax.swing.JFrame {
         jRadioButton2 = new javax.swing.JRadioButton();
         jRadioButton3 = new javax.swing.JRadioButton();
         jSeparator2 = new javax.swing.JSeparator();
+        jPanel3 = new javax.swing.JPanel();
+        jRadioButton4 = new javax.swing.JRadioButton();
+        jRadioButton5 = new javax.swing.JRadioButton();
+        jRadioButton6 = new javax.swing.JRadioButton();
+        jRadioButton7 = new javax.swing.JRadioButton();
+        jRadioButton8 = new javax.swing.JRadioButton();
+        jRadioButton9 = new javax.swing.JRadioButton();
+        jPanel5 = new javax.swing.JPanel();
+        jPanel1 = new javax.swing.JPanel();
+        vibrantAllShare = new javax.swing.JCheckBox();
+        vibrantAvatar = new javax.swing.JCheckBox();
+        vibrantMediahub = new javax.swing.JCheckBox();
+        vibrantWriteandGo = new javax.swing.JCheckBox();
+        vibrantGogo = new javax.swing.JCheckBox();
+        vibrantLayar = new javax.swing.JCheckBox();
+        vibrantMiniDiary = new javax.swing.JCheckBox();
+        vibrantKindle = new javax.swing.JCheckBox();
+        vibrantAmazon = new javax.swing.JCheckBox();
+        vibrantMemo = new javax.swing.JCheckBox();
+        vibrantWifiCalling = new javax.swing.JCheckBox();
+        jCheckBox2 = new javax.swing.JCheckBox();
+        VibrantVisualVoicemail = new javax.swing.JCheckBox();
+        vibrantThinkFree = new javax.swing.JCheckBox();
+        vibrantTelenav = new javax.swing.JCheckBox();
+        vibrantSlacker = new javax.swing.JCheckBox();
+        jCheckBox5 = new javax.swing.JCheckBox();
+        vibrantTmoTV = new javax.swing.JCheckBox();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
         wipeDalvikCacheToggle = new javax.swing.JCheckBox();
         zipName = new javax.swing.JTextField();
         jLabel4 = new javax.swing.JLabel();
+        zipProgress = new javax.swing.JProgressBar();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Vibrant Customization Kitchen");
@@ -247,7 +269,7 @@ public class Apps extends javax.swing.JFrame {
                     .addComponent(utilitiesRomManagerButton)
                     .addComponent(utilitiesSgsTools)
                     .addComponent(utilitiesSpareParts))
-                .addContainerGap(175, Short.MAX_VALUE))
+                .addContainerGap(181, Short.MAX_VALUE))
         );
         utilitiesPanelLayout.setVerticalGroup(
             utilitiesPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -262,174 +284,10 @@ public class Apps extends javax.swing.JFrame {
                 .addComponent(utilitiesSpareParts)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(utilitiesSgsTools)
-                .addContainerGap(24, Short.MAX_VALUE))
+                .addContainerGap(25, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Utilities", utilitiesPanel);
-
-        jPanel1.setEnabled(false);
-
-        vibrantAllShare.setText("AllShare");
-        vibrantAllShare.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                vibrantAllShareActionPerformed(evt);
-            }
-        });
-
-        vibrantAvatar.setText("Avatar");
-        vibrantAvatar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                vibrantAvatarActionPerformed(evt);
-            }
-        });
-
-        vibrantMediahub.setText("Mediahub");
-        vibrantMediahub.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                vibrantMediahubActionPerformed(evt);
-            }
-        });
-
-        vibrantWriteandGo.setText("Write and Go");
-        vibrantWriteandGo.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                vibrantWriteandGoActionPerformed(evt);
-            }
-        });
-
-        vibrantGogo.setText("GoGo");
-        vibrantGogo.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                vibrantGogoActionPerformed(evt);
-            }
-        });
-
-        vibrantLayar.setText("Layar");
-        vibrantLayar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                vibrantLayarActionPerformed(evt);
-            }
-        });
-
-        vibrantMiniDiary.setText("Mini Diary");
-        vibrantMiniDiary.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                vibrantMiniDiaryActionPerformed(evt);
-            }
-        });
-
-        vibrantKindle.setText("Kindle");
-        vibrantKindle.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                vibrantKindleActionPerformed(evt);
-            }
-        });
-
-        vibrantAmazon.setText("Amazon");
-        vibrantAmazon.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                vibrantAmazonActionPerformed(evt);
-            }
-        });
-
-        vibrantMemo.setText("Memo");
-        vibrantMemo.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                vibrantMemoActionPerformed(evt);
-            }
-        });
-
-        vibrantWifiCalling.setText("Wifi Calling");
-        vibrantWifiCalling.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                vibrantWifiCallingActionPerformed(evt);
-            }
-        });
-
-        vibrantTmoTv.setText("T-Mobile TV");
-        vibrantTmoTv.setEnabled(false);
-
-        jCheckBox2.setText("Audio Postcard");
-
-        vibrantVisualVoicemail.setText("Visual Voicemail");
-        vibrantVisualVoicemail.setEnabled(false);
-        vibrantVisualVoicemail.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                vibrantVisualVoicemailActionPerformed(evt);
-            }
-        });
-
-        jCheckBox4.setText("Think Free");
-        jCheckBox4.setEnabled(false);
-
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(vibrantAvatar)
-                    .addComponent(vibrantAllShare)
-                    .addComponent(vibrantAmazon)
-                    .addComponent(jCheckBox2)
-                    .addComponent(vibrantGogo)
-                    .addComponent(vibrantKindle))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(vibrantMiniDiary)
-                            .addComponent(vibrantTmoTv)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(vibrantLayar)
-                                    .addComponent(vibrantMediahub)
-                                    .addComponent(vibrantMemo))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(vibrantVisualVoicemail)
-                                    .addComponent(vibrantWifiCalling)
-                                    .addComponent(vibrantWriteandGo))))
-                        .addGap(99, 99, 99))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jCheckBox4)
-                        .addContainerGap())))
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(vibrantAllShare)
-                    .addComponent(vibrantLayar)
-                    .addComponent(vibrantVisualVoicemail))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(vibrantAmazon)
-                    .addComponent(vibrantMediahub)
-                    .addComponent(vibrantWriteandGo))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jCheckBox2)
-                    .addComponent(vibrantMemo)
-                    .addComponent(vibrantWifiCalling))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(vibrantAvatar)
-                    .addComponent(vibrantMiniDiary))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(vibrantGogo)
-                    .addComponent(vibrantTmoTv))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(vibrantKindle)
-                    .addComponent(jCheckBox4))
-                .addGap(96, 96, 96))
-        );
-
-        jTabbedPane1.addTab("Vibrant Apps", jPanel1);
 
         launchersLauncherPro.setText("LauncherPro 8.2");
         launchersLauncherPro.addActionListener(new java.awt.event.ActionListener() {
@@ -529,7 +387,7 @@ public class Apps extends javax.swing.JFrame {
                 .addComponent(launcherTouchWiz)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(launchersZeam)
-                .addContainerGap(24, Short.MAX_VALUE))
+                .addContainerGap(25, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Launchers & Misc", jPanel4);
@@ -575,8 +433,8 @@ public class Apps extends javax.swing.JFrame {
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                .addContainerGap(35, Short.MAX_VALUE)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(mmsAospButton)
                     .addComponent(touchWizMmsButton)
@@ -588,11 +446,12 @@ public class Apps extends javax.swing.JFrame {
                     .addComponent(jRadioButton1)
                     .addComponent(jRadioButton2)
                     .addComponent(jRadioButton3))
-                .addContainerGap(54, Short.MAX_VALUE))
+                .addGap(31, 31, 31))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(jSeparator2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 69, Short.MAX_VALUE)
                     .addGroup(jPanel2Layout.createSequentialGroup()
@@ -607,12 +466,286 @@ public class Apps extends javax.swing.JFrame {
                         .addComponent(touchWizMmsButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(mmsDontModifyButton)))
-                .addGap(77, 77, 77))
+                .addGap(67, 67, 67))
         );
 
-        jTabbedPane1.addTab("System", jPanel2);
+        jTabbedPane1.addTab("AOSP", jPanel2);
 
-        jLabel1.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        ModemGroup.add(jRadioButton4);
+        jRadioButton4.setText("JL5");
+        jRadioButton4.setEnabled(false);
+
+        ModemGroup.add(jRadioButton5);
+        jRadioButton5.setText("JL4");
+        jRadioButton5.setEnabled(false);
+
+        ModemGroup.add(jRadioButton6);
+        jRadioButton6.setText("JL2");
+        jRadioButton6.setEnabled(false);
+
+        ModemGroup.add(jRadioButton7);
+        jRadioButton7.setText("JK6");
+        jRadioButton7.setEnabled(false);
+
+        ModemGroup.add(jRadioButton8);
+        jRadioButton8.setText("JK2");
+        jRadioButton8.setEnabled(false);
+
+        ModemGroup.add(jRadioButton9);
+        jRadioButton9.setSelected(true);
+        jRadioButton9.setText("Don't Modify");
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jRadioButton4)
+                    .addComponent(jRadioButton5)
+                    .addComponent(jRadioButton6)
+                    .addComponent(jRadioButton7)
+                    .addComponent(jRadioButton8)
+                    .addComponent(jRadioButton9))
+                .addContainerGap(199, Short.MAX_VALUE))
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jRadioButton4)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jRadioButton5)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jRadioButton6)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jRadioButton7)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jRadioButton8)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jRadioButton9)
+                .addContainerGap())
+        );
+
+        jTabbedPane1.addTab("Modems", jPanel3);
+
+        javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
+        jPanel5.setLayout(jPanel5Layout);
+        jPanel5Layout.setHorizontalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 290, Short.MAX_VALUE)
+        );
+        jPanel5Layout.setVerticalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 147, Short.MAX_VALUE)
+        );
+
+        jTabbedPane1.addTab("Kernels", jPanel5);
+
+        jPanel1.setEnabled(false);
+
+        vibrantAllShare.setText("AllShare");
+        vibrantAllShare.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vibrantAllShareActionPerformed(evt);
+            }
+        });
+
+        vibrantAvatar.setText("Avatar");
+        vibrantAvatar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vibrantAvatarActionPerformed(evt);
+            }
+        });
+
+        vibrantMediahub.setText("Mediahub");
+        vibrantMediahub.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vibrantMediahubActionPerformed(evt);
+            }
+        });
+
+        vibrantWriteandGo.setText("Write and Go");
+        vibrantWriteandGo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vibrantWriteandGoActionPerformed(evt);
+            }
+        });
+
+        vibrantGogo.setText("GoGo");
+        vibrantGogo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vibrantGogoActionPerformed(evt);
+            }
+        });
+
+        vibrantLayar.setText("Layar");
+        vibrantLayar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vibrantLayarActionPerformed(evt);
+            }
+        });
+
+        vibrantMiniDiary.setText("Mini Diary");
+        vibrantMiniDiary.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vibrantMiniDiaryActionPerformed(evt);
+            }
+        });
+
+        vibrantKindle.setText("Kindle");
+        vibrantKindle.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vibrantKindleActionPerformed(evt);
+            }
+        });
+
+        vibrantAmazon.setText("Amazon");
+        vibrantAmazon.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vibrantAmazonActionPerformed(evt);
+            }
+        });
+
+        vibrantMemo.setText("Memo");
+        vibrantMemo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vibrantMemoActionPerformed(evt);
+            }
+        });
+
+        vibrantWifiCalling.setText("Wifi Calling");
+        vibrantWifiCalling.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vibrantWifiCallingActionPerformed(evt);
+            }
+        });
+
+        jCheckBox2.setText("Audio Postcard");
+
+        VibrantVisualVoicemail.setText("Visual Voicemail");
+        VibrantVisualVoicemail.setEnabled(false);
+        VibrantVisualVoicemail.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                VibrantVisualVoicemailActionPerformed(evt);
+            }
+        });
+
+        vibrantThinkFree.setText("Think Free");
+        vibrantThinkFree.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vibrantThinkFreeActionPerformed(evt);
+            }
+        });
+
+        vibrantTelenav.setText("Telenav");
+        vibrantTelenav.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vibrantTelenavActionPerformed(evt);
+            }
+        });
+
+        vibrantSlacker.setText("Slacker");
+        vibrantSlacker.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vibrantSlackerActionPerformed(evt);
+            }
+        });
+
+        jCheckBox5.setText("My Account");
+        jCheckBox5.setEnabled(false);
+
+        vibrantTmoTV.setText("T-Mobile TV");
+        vibrantTmoTV.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vibrantTmoTVActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap(13, Short.MAX_VALUE)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(vibrantAvatar)
+                    .addComponent(vibrantAllShare)
+                    .addComponent(vibrantAmazon)
+                    .addComponent(jCheckBox2)
+                    .addComponent(vibrantGogo)
+                    .addComponent(vibrantKindle))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(vibrantMiniDiary)
+                                    .addComponent(vibrantLayar)
+                                    .addComponent(vibrantMediahub)
+                                    .addComponent(vibrantMemo))
+                                .addGap(10, 10, 10))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(jCheckBox5)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(vibrantTelenav)
+                            .addComponent(vibrantTmoTV)
+                            .addComponent(vibrantWriteandGo)
+                            .addComponent(vibrantWifiCalling)
+                            .addComponent(VibrantVisualVoicemail)
+                            .addComponent(vibrantThinkFree)))
+                    .addComponent(vibrantSlacker)))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(vibrantAllShare)
+                    .addComponent(vibrantLayar)
+                    .addComponent(vibrantTelenav))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(vibrantThinkFree)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(vibrantTmoTV)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(VibrantVisualVoicemail)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(vibrantWriteandGo)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(vibrantWifiCalling))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(vibrantAmazon)
+                            .addComponent(vibrantMediahub))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jCheckBox2)
+                            .addComponent(vibrantMemo))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(vibrantAvatar)
+                            .addComponent(vibrantMiniDiary))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(vibrantGogo)
+                            .addComponent(jCheckBox5))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(vibrantKindle)
+                            .addComponent(vibrantSlacker))))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
+        jTabbedPane1.addTab("Vibrant Apps", jPanel1);
+
+        jLabel1.setFont(new java.awt.Font("Tahoma", 1, 12));
         jLabel1.setText("VCK v0.4");
 
         jLabel2.setText("by Roman");
@@ -633,25 +766,29 @@ public class Apps extends javax.swing.JFrame {
 
         jLabel4.setText(".zip");
 
+        zipProgress.setFocusable(false);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 289, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
+                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 295, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.TRAILING)
-                        .addGroup(layout.createSequentialGroup()
-                            .addGap(8, 8, 8)
-                            .addComponent(jLabel3)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                            .addComponent(jLabel2)))
-                    .addComponent(generateZipButton, javax.swing.GroupLayout.DEFAULT_SIZE, 114, Short.MAX_VALUE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addComponent(zipName, javax.swing.GroupLayout.DEFAULT_SIZE, 93, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(17, 17, 17)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jLabel1)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jLabel3)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(jLabel2))))
+                    .addComponent(zipProgress, javax.swing.GroupLayout.DEFAULT_SIZE, 123, Short.MAX_VALUE)
+                    .addComponent(generateZipButton, javax.swing.GroupLayout.DEFAULT_SIZE, 123, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(zipName, javax.swing.GroupLayout.DEFAULT_SIZE, 102, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel4))
                     .addComponent(wipeDalvikCacheToggle))
@@ -661,15 +798,17 @@ public class Apps extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 174, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 191, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel2)
                             .addComponent(jLabel3))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(zipProgress, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 59, Short.MAX_VALUE)
                         .addComponent(wipeDalvikCacheToggle)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -683,7 +822,7 @@ public class Apps extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private List<String> recursiveFileSearch(File dir) {
+    public static List<String> recursiveFileSearch(File dir) {
         //File systemFolder = new File("");
         List<String> list = new ArrayList<String>();
         if (dir.isDirectory()) {
@@ -700,55 +839,70 @@ public class Apps extends javax.swing.JFrame {
     }
 
     private void generateZipButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_generateZipButtonActionPerformed
-        //folders should be created when program starts, cleaned when it closes
-        //file all files in /system/, /data/, and /META-INF/, add to sources
-        sources.clear();
-        sources.addAll(recursiveFileSearch(new File("META-INF")));
-        sources.addAll(recursiveFileSearch(new File("system")));
-        sources.addAll(recursiveFileSearch(new File("data")));
-        createUpdateScript();//generate update script based on files in sources
+        zipProgress.setVisible(true);
+        Zip z = new Zip(sources, this.zipName.getText());
+        z.addPropertyChangeListener(
+                new PropertyChangeListener() {
 
-        // Create a buffer for reading the files
-        byte[] buf = new byte[1024];
+                    public void propertyChange(PropertyChangeEvent evt) {
+                        if ("progress".equals(evt.getPropertyName())) {
+                            zipProgress.setValue((Integer) evt.getNewValue());
+                        }
+                    }
+                });
 
-        try {
-            // Create the ZIP file
-            String target = this.zipName.getText();
-            if (target.equals("")) {
-                target = "flash";
-            }
-            target += ".zip";
+        z.execute();
 
-            ZipOutputStream out = new ZipOutputStream(new FileOutputStream(target));
 
-            // Compress the files
-            for (int i = 0; i < sources.size(); i++) {
-                FileInputStream in = new FileInputStream(sources.get(i));
-
-                // Add ZIP entry to output stream.
-                out.putNextEntry(new ZipEntry(sources.get(i)));
-
-                // Transfer bytes from the file to the ZIP file
-                int len;
-                while ((len = in.read(buf)) > 0) {
-                    out.write(buf, 0, len);
-                }
-
-                // Complete the entry
-                out.closeEntry();
-                in.close();
-            }
-
-            // Complete the ZIP file
-            out.close();
-
-            JOptionPane.showMessageDialog(null, "Please, for the love of your phone, make a Nandroid backup. \nThis is an alpha.", "Success!", 1);
-        } catch (FileNotFoundException fnf) {
-            JOptionPane.showMessageDialog(null, "Improper name.", "Error!", 0);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-        }
+        //        //folders should be created when program starts, cleaned when it closes
+//        //file all files in /system/, /data/, and /META-INF/, add to sources
+//        sources.clear();
+//        sources.addAll(recursiveFileSearch(new File("META-INF")));
+//        sources.addAll(recursiveFileSearch(new File("system")));
+//        sources.addAll(recursiveFileSearch(new File("data")));
+//        createUpdateScript();//generate update script based on files in sources
+//
+//        // Create a buffer for reading the files
+//        byte[] buf = new byte[1024];
+//
+//        try {
+//            // Create the ZIP file
+//            String target = this.zipName.getText();
+//            if (target.equals("")) {
+//                target = "flash";
+//            }
+//            target += ".zip";
+//
+//            ZipOutputStream out = new ZipOutputStream(new FileOutputStream(target));
+//
+//            // Compress the files
+//            for (int i = 0; i < sources.size(); i++) {
+//                FileInputStream in = new FileInputStream(sources.get(i));
+//
+//                // Add ZIP entry to output stream.
+//                out.putNextEntry(new ZipEntry(sources.get(i)));
+//
+//                // Transfer bytes from the file to the ZIP file
+//                int len;
+//                while ((len = in.read(buf)) > 0) {
+//                    out.write(buf, 0, len);
+//                }
+//
+//                // Complete the entry
+//                out.closeEntry();
+//                in.close();
+//            }
+//
+//            // Complete the ZIP file
+//            out.close();
+//
+//            JOptionPane.showMessageDialog(null, "Please, for the love of your phone, make a Nandroid backup. \nThis is an alpha.", "Success!", 1);
+//        } catch (FileNotFoundException fnf) {
+//            JOptionPane.showMessageDialog(null, "Improper name.", "Error!", 0);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } finally {
+//        }
     }//GEN-LAST:event_generateZipButtonActionPerformed
 
     public static void copyFile(File sourceFile, File destFile) throws IOException {
@@ -772,7 +926,7 @@ public class Apps extends javax.swing.JFrame {
         }
     }
 
-    private void addApp(String sourceLoc, String targetLoc) {
+    private static void addApp(String sourceLoc, String targetLoc) {
         try {
             File source = new File(sourceLoc);
             File target = new File(targetLoc);
@@ -784,7 +938,7 @@ public class Apps extends javax.swing.JFrame {
         }
     }
 
-    private void removeApp(String s) {
+    private static void removeApp(String s) {
         try {
             File f = new File(s);
             f.delete();
@@ -794,6 +948,12 @@ public class Apps extends javax.swing.JFrame {
         } catch (Exception e) {
             System.out.println("error in removeApp");
         }
+    }
+
+    public void setZipProgress(int n) {
+        zipProgress.setValue(n);
+        System.out.println("set to " + n);
+        zipProgress.repaint();
     }
 
     private void formComponentShown(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentShown
@@ -812,6 +972,33 @@ public class Apps extends javax.swing.JFrame {
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
         cleanUp();
     }//GEN-LAST:event_formWindowClosing
+
+    private void mmsDontModifyButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mmsDontModifyButtonActionPerformed
+        try {
+            new File("system/app/Mms.apk").delete();
+        } catch (Exception e) {
+        }
+}//GEN-LAST:event_mmsDontModifyButtonActionPerformed
+
+    private void touchWizMmsButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_touchWizMmsButtonActionPerformed
+        String source = "kitchen/system/app/Mms-TW.apk";
+        String target = "system/app/Mms.apk";
+        if (this.touchWizMmsButton.isSelected()) {
+            addApp(source, target);
+        } else {
+            removeApp(target);
+        }
+}//GEN-LAST:event_touchWizMmsButtonActionPerformed
+
+    private void mmsAospButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mmsAospButtonActionPerformed
+        String source = "kitchen/system/app/Mms-AOSP.apk";
+        String target = "system/app/Mms.apk";
+        if (this.mmsAospButton.isSelected()) {
+            addApp(source, target);
+        } else {
+            removeApp(target);
+        }
+}//GEN-LAST:event_mmsAospButtonActionPerformed
 
     private void miscCarHomeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_miscCarHomeActionPerformed
         String target = "data/app/CarHomeGoogle.apk";
@@ -846,6 +1033,90 @@ public class Apps extends javax.swing.JFrame {
             removeApp("system/lib/libjni_latinime.so");
         }
 }//GEN-LAST:event_miscGingerbreadkbActionPerformed
+
+    private void launchersZeamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_launchersZeamActionPerformed
+        String target = "data/app/org.zeam.apk";
+        String source = "kitchen/" + target;
+
+        if (((JCheckBox) evt.getSource()).isSelected()) {
+            addApp(source, target);
+        } else {
+            removeApp(target);
+        }
+}//GEN-LAST:event_launchersZeamActionPerformed
+
+    private void launcherTouchWizActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_launcherTouchWizActionPerformed
+        String target = "system/app/TouchWiz30Launcher.apk";
+        String source = "kitchen/" + target;
+
+        if (((JCheckBox) evt.getSource()).isSelected()) {
+            addApp(source, target);
+            addApp("kitchen/system/app/SamsungWidget_CalendarClock.apk", "system/app/SamsungWidget_CalendarClock.apk");
+            addApp("kitchen/system/app/SamsungWidget_FeedAndUpdate.apk", "system/app/SamsungWidget_FeedAndUpdate.apk");
+            addApp("kitchen/system/app/SamsungWidget_ProgramMonitor.apk", "system/app/SamsungWidget_ProgramMonitor.apk");
+            addApp("kitchen/system/app/SamsungWidget_StockClock.apk", "system/app/SamsungWidget_StockClock.apk");
+        } else {
+            removeApp(target);
+            removeApp("system/app/SamsungWidget_CalendarClock.apk");
+            removeApp("system/app/SamsungWidget_FeedAndUpdate.apk");
+            removeApp("system/app/SamsungWidget_ProgramMonitor.apk");
+            removeApp("system/app/SamsungWidget_StockClock.apk");
+        }
+}//GEN-LAST:event_launcherTouchWizActionPerformed
+
+    private void launchersGingerbreadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_launchersGingerbreadActionPerformed
+        String target = "data/app/Launcher2.apk";
+        String source = "kitchen/" + target;
+
+        if (((JCheckBox) evt.getSource()).isSelected()) {
+            addApp(source, target);
+        } else {
+            removeApp(target);
+        }
+}//GEN-LAST:event_launchersGingerbreadActionPerformed
+
+    private void launchersAdwActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_launchersAdwActionPerformed
+        String target = "data/app/org.adw.launcher.apk";
+        String source = "kitchen/" + target;
+
+        if (((JCheckBox) evt.getSource()).isSelected()) {
+            addApp(source, target);
+        } else {
+            removeApp(target);
+        }
+}//GEN-LAST:event_launchersAdwActionPerformed
+
+    private void launchersLauncherProActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_launchersLauncherProActionPerformed
+        String target = "data/app/LauncherPro-0.8.2.apk";
+        String source = "kitchen/" + target;
+
+        if (((JCheckBox) evt.getSource()).isSelected()) {
+            addApp(source, target);
+        } else {
+            removeApp(target);
+        }
+}//GEN-LAST:event_launchersLauncherProActionPerformed
+
+    private void VibrantVisualVoicemailActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_VibrantVisualVoicemailActionPerformed
+
+}//GEN-LAST:event_VibrantVisualVoicemailActionPerformed
+
+    private void vibrantWifiCallingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantWifiCallingActionPerformed
+        String target = "system/app/WiFi-Calling.apk";
+        String source = "kitchen/" + target;
+
+        if (((JCheckBox) evt.getSource()).isSelected()) {
+            addApp(source, target);
+            addApp("kitchen/system/lib/libganril.so", "system/lib/libganril.so");
+            addApp("kitchen/system/lib/libkineto.so", "system/lib/libkineto.so");
+            addApp("kitchen/system/lib/librilswitch.so", "system/lib/librilswitch.so");
+        } else {
+            removeApp(target);
+            removeApp("system/lib/libganril.so");
+            removeApp("system/lib/libkineto.so");
+            removeApp("system/lib/librilswitch.so");
+        }
+}//GEN-LAST:event_vibrantWifiCallingActionPerformed
 
     private void vibrantMemoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantMemoActionPerformed
         String target = "system/app/Memo.apk";
@@ -949,33 +1220,6 @@ public class Apps extends javax.swing.JFrame {
         }
 }//GEN-LAST:event_vibrantAllShareActionPerformed
 
-    private void mmsDontModifyButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mmsDontModifyButtonActionPerformed
-        try {
-            new File("system/app/Mms.apk").delete();
-        } catch (Exception e) {
-        }
-}//GEN-LAST:event_mmsDontModifyButtonActionPerformed
-
-    private void touchWizMmsButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_touchWizMmsButtonActionPerformed
-        String source = "kitchen/system/app/Mms-TW.apk";
-        String target = "system/app/Mms.apk";
-        if (this.touchWizMmsButton.isSelected()) {
-            addApp(source, target);
-        } else {
-            removeApp(target);
-        }
-}//GEN-LAST:event_touchWizMmsButtonActionPerformed
-
-    private void mmsAospButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mmsAospButtonActionPerformed
-        String source = "kitchen/system/app/Mms-AOSP.apk";
-        String target = "system/app/Mms.apk";
-        if (this.mmsAospButton.isSelected()) {
-            addApp(source, target);
-        } else {
-            removeApp(target);
-        }
-}//GEN-LAST:event_mmsAospButtonActionPerformed
-
     private void utilitiesSgsToolsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_utilitiesSgsToolsActionPerformed
         String target = "data/app/de.Fr4gg0r.SGS.Tools.apk";
         String source = "kitchen/" + target;
@@ -1030,8 +1274,8 @@ public class Apps extends javax.swing.JFrame {
         }
 }//GEN-LAST:event_utilitiesTitaniumButtonActionPerformed
 
-    private void launchersLauncherProActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_launchersLauncherProActionPerformed
-        String target = "data/app/LauncherPro-0.8.2.apk";
+    private void vibrantSlackerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantSlackerActionPerformed
+        String target = "system/app/slackerradio.apk";
         String source = "kitchen/" + target;
 
         if (((JCheckBox) evt.getSource()).isSelected()) {
@@ -1039,10 +1283,10 @@ public class Apps extends javax.swing.JFrame {
         } else {
             removeApp(target);
         }
-    }//GEN-LAST:event_launchersLauncherProActionPerformed
+    }//GEN-LAST:event_vibrantSlackerActionPerformed
 
-    private void launchersGingerbreadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_launchersGingerbreadActionPerformed
-        String target = "data/app/Launcher2.apk";
+    private void vibrantTelenavActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantTelenavActionPerformed
+        String target = "system/app/Telenav.apk";
         String source = "kitchen/" + target;
 
         if (((JCheckBox) evt.getSource()).isSelected()) {
@@ -1050,10 +1294,10 @@ public class Apps extends javax.swing.JFrame {
         } else {
             removeApp(target);
         }
-    }//GEN-LAST:event_launchersGingerbreadActionPerformed
+    }//GEN-LAST:event_vibrantTelenavActionPerformed
 
-    private void launcherTouchWizActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_launcherTouchWizActionPerformed
-        String target = "system/app/TouchWiz30Launcher.apk";
+    private void vibrantThinkFreeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantThinkFreeActionPerformed
+        String target = "system/app/thinkdroid.apk";
         String source = "kitchen/" + target;
 
         if (((JCheckBox) evt.getSource()).isSelected()) {
@@ -1061,27 +1305,10 @@ public class Apps extends javax.swing.JFrame {
         } else {
             removeApp(target);
         }
-    }//GEN-LAST:event_launcherTouchWizActionPerformed
+    }//GEN-LAST:event_vibrantThinkFreeActionPerformed
 
-    private void vibrantWifiCallingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantWifiCallingActionPerformed
-        String target = "system/app/WiFi-Calling.apk";
-        String source = "kitchen/" + target;
-
-        if (((JCheckBox) evt.getSource()).isSelected()) {
-            addApp(source, target);
-            addApp("kitchen/system/lib/libganril.so", "system/lib/libganril.so");
-            addApp("kitchen/system/lib/libkineto.so", "system/lib/libkineto.so");
-            addApp("kitchen/system/lib/librilswitch.so", "system/lib/librilswitch.so");
-        } else {
-            removeApp(target);
-            removeApp("system/lib/libganril.so");
-            removeApp("system/lib/libkineto.so");
-            removeApp("system/lib/librilswitch.so");
-        }
-    }//GEN-LAST:event_vibrantWifiCallingActionPerformed
-
-    private void launchersAdwActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_launchersAdwActionPerformed
-        String target = "data/app/org.adw.launcher.apk";
+    private void vibrantTmoTVActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantTmoTVActionPerformed
+        String target = "system/app/com.mobitv.client.mobitv.apk";
         String source = "kitchen/" + target;
 
         if (((JCheckBox) evt.getSource()).isSelected()) {
@@ -1089,22 +1316,7 @@ public class Apps extends javax.swing.JFrame {
         } else {
             removeApp(target);
         }
-    }//GEN-LAST:event_launchersAdwActionPerformed
-
-    private void launchersZeamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_launchersZeamActionPerformed
-        String target = "data/app/org.zeam.apk";
-        String source = "kitchen/" + target;
-
-        if (((JCheckBox) evt.getSource()).isSelected()) {
-            addApp(source, target);
-        } else {
-            removeApp(target);
-        }
-    }//GEN-LAST:event_launchersZeamActionPerformed
-
-    private void vibrantVisualVoicemailActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantVisualVoicemailActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_vibrantVisualVoicemailActionPerformed
+    }//GEN-LAST:event_vibrantTmoTVActionPerformed
 
     /**
      * @param args the command line arguments
@@ -1127,19 +1339,29 @@ public class Apps extends javax.swing.JFrame {
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.ButtonGroup MmsGroup;
-    private javax.swing.JButton generateZipButton;
+    private javax.swing.ButtonGroup ModemGroup;
+    private javax.swing.JCheckBox VibrantVisualVoicemail;
+    public javax.swing.JButton generateZipButton;
     private javax.swing.JCheckBox jCheckBox2;
-    private javax.swing.JCheckBox jCheckBox4;
+    private javax.swing.JCheckBox jCheckBox5;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
+    private javax.swing.JPanel jPanel5;
     private javax.swing.JRadioButton jRadioButton1;
     private javax.swing.JRadioButton jRadioButton2;
     private javax.swing.JRadioButton jRadioButton3;
+    private javax.swing.JRadioButton jRadioButton4;
+    private javax.swing.JRadioButton jRadioButton5;
+    private javax.swing.JRadioButton jRadioButton6;
+    private javax.swing.JRadioButton jRadioButton7;
+    private javax.swing.JRadioButton jRadioButton8;
+    private javax.swing.JRadioButton jRadioButton9;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JCheckBox launcherTouchWiz;
@@ -1168,11 +1390,14 @@ public class Apps extends javax.swing.JFrame {
     private javax.swing.JCheckBox vibrantMediahub;
     private javax.swing.JCheckBox vibrantMemo;
     private javax.swing.JCheckBox vibrantMiniDiary;
-    private javax.swing.JCheckBox vibrantTmoTv;
-    private javax.swing.JCheckBox vibrantVisualVoicemail;
+    private javax.swing.JCheckBox vibrantSlacker;
+    private javax.swing.JCheckBox vibrantTelenav;
+    private javax.swing.JCheckBox vibrantThinkFree;
+    private javax.swing.JCheckBox vibrantTmoTV;
     private javax.swing.JCheckBox vibrantWifiCalling;
     private javax.swing.JCheckBox vibrantWriteandGo;
     private javax.swing.JCheckBox wipeDalvikCacheToggle;
-    private javax.swing.JTextField zipName;
+    public javax.swing.JTextField zipName;
+    public javax.swing.JProgressBar zipProgress;
     // End of variables declaration//GEN-END:variables
 }
