@@ -4,11 +4,11 @@
  */
 package vck;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.String;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -19,23 +19,38 @@ import javax.swing.SwingWorker;
  *
  * @author roman
  */
-public class Zip extends SwingWorker<List<String>, String> {
+public class Zip extends SwingWorker<List<DownloadFile>, String> {
 
-    List<String> sources;
+    List<DownloadFile> sources;
     String name;
+    static Zip instance;
 
-    public Zip(List<String> s, String name) {
+    public Zip() {
+        //this(new ArrayList<String>(), "");
+    }
+
+    public Zip(List<DownloadFile> s, String name) {
+        if (instance == null) {
+            instance = this;
+        }
         sources = s;
         this.name = name;
     }
 
-    public List<String> doInBackground() {
+    public static Zip getInstance() {
+        if (instance == null) {
+            instance = new Zip();
+        }
+        return instance;
+    }
+
+    public List<DownloadFile> doInBackground() {
         //folders should be created when program starts, cleaned when it closes
         //file all files in /system/, /data/, and /META-INF/, add to sources
-        sources.clear();
-        sources.addAll(Apps.recursiveFileSearch(new File("META-INF")));
-        sources.addAll(Apps.recursiveFileSearch(new File("system")));
-        sources.addAll(Apps.recursiveFileSearch(new File("data")));
+        //sources.clear();
+        //sources.addAll(Apps.recursiveFileSearch(new File("META-INF")));
+        //sources.addAll(Apps.recursiveFileSearch(new File("system")));
+        //sources.addAll(Apps.recursiveFileSearch(new File("data")));
         Apps.createUpdateScript();//generate update script based on files in sources
 
         // Create a buffer for reading the files
@@ -54,14 +69,15 @@ public class Zip extends SwingWorker<List<String>, String> {
             // Compress the files
             for (int i = 0; i < sources.size(); i++) {
                 int progress = (int) (((double) (i + 1) / sources.size()) * 100);
-                System.out.println(progress);
                 setProgress(progress);
                 //Apps.setZipProgress(progress);
 
-                FileInputStream in = new FileInputStream(sources.get(i));
 
-                // Add ZIP entry to output stream.
-                out.putNextEntry(new ZipEntry(sources.get(i)));
+                //System.out.println("addin source to zip: " +  sources.get(i).substring(8));
+                FileInputStream in = new FileInputStream(sources.get(i).getSource()); //file location
+
+                // Add ZIP entry to output stream. Change the output of the zip file here
+                out.putNextEntry(new ZipEntry(sources.get(i).getTarget()));
 
                 // Transfer bytes from the file to the ZIP file
                 int len;
@@ -90,6 +106,5 @@ public class Zip extends SwingWorker<List<String>, String> {
     }
 
     public void process() {
-        
     }
 }
