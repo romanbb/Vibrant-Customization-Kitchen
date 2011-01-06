@@ -4,6 +4,7 @@
  */
 package vck;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -53,6 +54,7 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
         //sources.addAll(Apps.recursiveFileSearch(new File("data")));
         Apps.createUpdateScript();//generate update script based on files in sources
 
+
         // Create a buffer for reading the files
         byte[] buf = new byte[1024];
 
@@ -64,6 +66,10 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
             }
             target += ".zip";
 
+            File f = new File(target);
+            if (f.exists()) {
+                f.delete();
+            }
             ZipOutputStream out = new ZipOutputStream(new FileOutputStream(target));
 
             // Compress the files
@@ -92,7 +98,7 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
 
             // Complete the ZIP file
             out.close();
-
+            Apps.cleanUp();
             JOptionPane.showMessageDialog(null, "Please, for the love of your phone, make a Nandroid backup. \nThis is an alpha.", "Success!", 1);
             Apps.getInstance().zipProgress.setVisible(false);
         } catch (FileNotFoundException fnf) {
@@ -101,6 +107,7 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
             e.printStackTrace();
         } finally {
             //Apps.zipProgress.setVisible(false);
+            Apps.removeApp("kitchen/META-INF/com/google/android/update-script");
             return sources;
         }
     }

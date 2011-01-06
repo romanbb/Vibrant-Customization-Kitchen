@@ -100,7 +100,7 @@ public class VCKTools {
         }
     }
 
-    public static void download(DownloadFile f) throws IOException, FileNotFoundException {
+    public static boolean download(DownloadFile f) throws IOException, FileNotFoundException {
         OutputStream out = null;
         URLConnection conn = null;
         InputStream in = null;
@@ -127,10 +127,13 @@ public class VCKTools {
             if (out != null) {
                 out.close();
             }
+        } catch (FileNotFoundException fof) {
+            Apps.getInstance().writeConsoleMessage(f.getSource() + " was not found on the web server");
+            return false;
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
-
+        return true;
     }
 
     public static boolean deleteDir(File dir) {

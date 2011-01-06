@@ -4,15 +4,9 @@
  */
 package vck;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.LinkedList;
 import java.util.List;
 import javax.swing.SwingWorker;
@@ -32,6 +26,7 @@ public class Download extends SwingWorker<List<DownloadFile>, String> {
             //System.out.println(f.getSource() + " exists");
             try {
                 File newMD5 = new File("kitchen/temp.md5");
+                //newMD5.createNewFile();
                 //System.out.println("created new temp md5 file");
                 try {
                     VCKTools.download(new DownloadFile(f.getUrl() + ".md5", "kitchen/temp.md5", f.getTarget() + ".md5"));
@@ -39,11 +34,9 @@ public class Download extends SwingWorker<List<DownloadFile>, String> {
                     Apps.getInstance().writeConsoleMessage(f.getSource() + " has no MD5 on the server, going to download it for funsies!");
                     return false;
                 }
-
                 //check against current md5
                 String online = VCKTools.readFile("kitchen/temp.md5");
                 String local = VCKTools.readFile(f.getSource() + ".md5");
-                Apps.getInstance().writeConsoleMessage(online + " - " + local);
                 if (online.equals(local)) {
                     Apps.getInstance().writeConsoleMessage(f.getSource() + " matches the web server, skipping");
                     return true;
@@ -93,15 +86,26 @@ public class Download extends SwingWorker<List<DownloadFile>, String> {
                 DownloadFile wf = dlq.poll();
 
                 if (!fileExists(wf)) {
-                    download(wf);
+                    try {
+                        if (!VCKTools.download(wf)) {
+                            System.out.println("download failed");
+                            Apps.removeApp(wf.getTarget());
+                        }
+                    } catch (FileNotFoundException fof) {
+                        Apps.getInstance().writeConsoleMessage(wf.getSource() + " was not found on the web server");
+                    } catch (IOException ioe) {
+                        ioe.printStackTrace();
+                    }
                 }
 
                 if (dlq.isEmpty()) {
                     Apps.getInstance().writeConsoleMessage("downloading finished!");
+                    Apps.getInstance().generateZipButton.setEnabled(true);
                 }
             } else {
                 VCKTools.createSums();
-                Apps.getInstance().generateZipButton.setEnabled(true);
+                
+
             }
 
         }
@@ -117,45 +121,47 @@ public class Download extends SwingWorker<List<DownloadFile>, String> {
         Apps.getInstance().generateZipButton.setEnabled(false);
         dlq.add(f);
     }
-
-    public static void download(DownloadFile f) {
-        OutputStream out = null;
-        URLConnection conn = null;
-        InputStream in = null;
-
-        try {
-
-            // Get the URL
-            URL url = new URL(f.getUrl());
-            // Open an output stream to the destination file on our local filesystem
-            Apps.getInstance().writeConsoleMessage("downloading " + f.getSource());
-            out = new BufferedOutputStream(new FileOutputStream(f.getSource()));
-            conn = url.openConnection();
-            in = conn.getInputStream();
-
-            // Get the data
-            isDownloading = true;
-            byte[] buffer = new byte[1024];
-            int numRead;
-            while ((numRead = in.read(buffer)) != -1) {
-                out.write(buffer, 0, numRead);
-            }
-            // file downloaded
-
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        } finally {
-            try {
-                if (in != null) {
-                    in.close();
-                }
-                if (out != null) {
-                    out.close();
-                }
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
-            }
-
-        }
-    }
+//    public static boolean download(DownloadFile f) {
+//        OutputStream out = null;
+//        URLConnection conn = null;
+//        InputStream in = null;
+//
+//        try {
+//            // Get the URL
+//            URL url = new URL(f.getUrl());
+//            // Open an output stream to the destination file on our local filesystem
+//            Apps.getInstance().writeConsoleMessage("downloading " + f.getSource());
+//            out = new BufferedOutputStream(new FileOutputStream(f.getSource()));
+//            conn = url.openConnection();
+//            in = conn.getInputStream();
+//
+//            // Get the data
+//            byte[] buffer = new byte[1024];
+//            int numRead;
+//            while ((numRead = in.read(buffer)) != -1) {
+//                out.write(buffer, 0, numRead);
+//            }
+//            // file downloaded
+//
+//        } catch (FileNotFoundException e) {
+//            Apps.getInstance().writeConsoleMessage(f.getSource() + " was not found on the web server");
+//            return false;
+//        } catch (Exception exception) {
+//            exception.printStackTrace();
+//            return false;
+//        } finally {
+//            try {
+//                if (in != null) {
+//                    in.close();
+//                }
+//                if (out != null) {
+//                    out.close();
+//                }
+//            } catch (IOException ioe) {
+//                ioe.printStackTrace();
+//            }
+//
+//        }
+//        return true;
+//    }
 }
