@@ -27,6 +27,20 @@ import java.util.List;
  * @author roman
  */
 public class VCKTools {
+    static VCKTools instance;
+
+    public VCKTools() {
+        if (instance == null) {
+            instance = this;
+        }
+    }
+
+    public static VCKTools getInstance() {
+        if (instance == null) {
+            instance = new VCKTools();
+        }
+        return instance;
+    }
 
     public static byte[] createChecksum(String filename) throws
             Exception {

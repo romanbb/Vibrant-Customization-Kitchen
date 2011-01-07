@@ -50,12 +50,13 @@ public class Apps extends javax.swing.JFrame {
         return instance;
     }
 
-    private static void createDirectories() {
+    private void createDirectories() {
         String prefix = "kitchen/";
 
         new File(prefix + "system/app").mkdirs();
         new File(prefix + "data/app").mkdirs();
         new File(prefix + "system/lib").mkdirs();
+        new File(prefix + "updates").mkdirs();
         new File(prefix + "META-INF/com/google/android").mkdirs();
 
         addApp(urlBase + "kitchen/META-INF/CERT.RSA", "kitchen/META-INF/CERT.RSA", "META-INF/CERT.RSA");
@@ -92,7 +93,7 @@ public class Apps extends javax.swing.JFrame {
 
     }
 
-    public static void cleanUp() {
+    public void cleanUp() {
         String prefix = "kitchen/";
         new File("kitchen/META-INF/com/google/android/").delete();
         removeApp("system/app/Mms.apk");
@@ -107,7 +108,7 @@ public class Apps extends javax.swing.JFrame {
 //        deleteDir(new File(prefix + "META-INF"));
     }
 
-    public static void createUpdateScript() {
+    public void createUpdateScript() {
         //check whether to use data and system
 //        for (DownloadFile entry : files) {
 //            if (!useData && entry.getTarget().startsWith("data")) {
@@ -138,12 +139,15 @@ public class Apps extends javax.swing.JFrame {
             if (wipeDalvik) {
                 out.println("show_progress 0." + i + " 0");
                 out.println("delete_recursive DATA:dalvik-cache");
-                out.println("show_progress 0." + i + " 10");
+                out.println("show_progress 0." + i + " 10\n");
                 i++;
             }
 
-            for (DownloadFile entry : files) {
+            if (!files.isEmpty()) {
                 out.println("show_progress 0." + i + " 0");
+            }
+            for (DownloadFile entry : files) {
+
                 if (!useData && entry.getTarget().startsWith("data")) {
                     useData = true;
                     out.println("copy_dir PACKAGE:data DATA:");
@@ -154,8 +158,10 @@ public class Apps extends javax.swing.JFrame {
                     out.println("copy_dir PACKAGE:system SYSTEM:");
                     break;
                 }
-                out.println("show_progress 0." + i + " 10");
+
             }
+            out.println("show_progress 0." + i + " 10\n");
+            i++;
 
             //modem
             if (useModem) {
@@ -164,6 +170,7 @@ public class Apps extends javax.swing.JFrame {
                 out.println("set_perm 0 0 755 TMP:/updates/redbend_ua");
                 out.println("run_program /tmp/updates/redbend_ua restore /tmp/updates/modem.bin /dev/block/bml12");
                 out.println("show_progress 0." + i + " 10");
+                i++;
             }
 
             //out.println("show_progress 0." + i + " 0");
@@ -232,15 +239,14 @@ public class Apps extends javax.swing.JFrame {
         jCheckBox5 = new javax.swing.JCheckBox();
         vibrantTmoTV = new javax.swing.JCheckBox();
         systemPanel = new javax.swing.JPanel();
-        mmsAospButton = new javax.swing.JRadioButton();
-        touchWizMmsButton = new javax.swing.JRadioButton();
-        mmsDontModifyButton = new javax.swing.JRadioButton();
         systemMms = new javax.swing.JComboBox();
-        jComboBox2 = new javax.swing.JComboBox();
+        systemEmail = new javax.swing.JComboBox();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
         systemModem = new javax.swing.JComboBox();
         jLabel7 = new javax.swing.JLabel();
+        jLabel8 = new javax.swing.JLabel();
+        systemEmail1 = new javax.swing.JComboBox();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         wipeDalvikCacheToggle = new javax.swing.JCheckBox();
@@ -249,7 +255,6 @@ public class Apps extends javax.swing.JFrame {
         zipProgress = new javax.swing.JProgressBar();
         jScrollPane1 = new javax.swing.JScrollPane();
         console = new javax.swing.JTextArea();
-        downloadButton = new javax.swing.JButton();
 
         jFileChooser1.setDialogType(javax.swing.JFileChooser.SAVE_DIALOG);
 
@@ -269,7 +274,6 @@ public class Apps extends javax.swing.JFrame {
         });
 
         generateZipButton.setText("Generate ZIP");
-        generateZipButton.setEnabled(false);
         generateZipButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 generateZipButtonActionPerformed(evt);
@@ -649,35 +653,6 @@ public class Apps extends javax.swing.JFrame {
 
         jTabbedPane1.addTab("Vibrant Apps", vibrantApps);
 
-        MmsGroup.add(mmsAospButton);
-        mmsAospButton.setText("AOSP Mms");
-        mmsAospButton.setToolTipText("supports lock screen puzzle notifications");
-        mmsAospButton.setEnabled(false);
-        mmsAospButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                mmsAospButtonActionPerformed(evt);
-            }
-        });
-
-        MmsGroup.add(touchWizMmsButton);
-        touchWizMmsButton.setText("TouchWiz Mms");
-        touchWizMmsButton.setEnabled(false);
-        touchWizMmsButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                touchWizMmsButtonActionPerformed(evt);
-            }
-        });
-
-        MmsGroup.add(mmsDontModifyButton);
-        mmsDontModifyButton.setSelected(true);
-        mmsDontModifyButton.setText("Don't Modify");
-        mmsDontModifyButton.setEnabled(false);
-        mmsDontModifyButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                mmsDontModifyButtonActionPerformed(evt);
-            }
-        });
-
         systemMms.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Don't Modify", "AOSP Mms", "TouchWiz Mms" }));
         systemMms.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -685,16 +660,21 @@ public class Apps extends javax.swing.JFrame {
             }
         });
 
-        jComboBox2.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Don't Modify", "AOSP Email", "TouchWiz Email" }));
-        jComboBox2.setEnabled(false);
+        systemEmail.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Don't Modify", "AOSP Email", "TouchWiz Email" }));
+        systemEmail.setEnabled(false);
 
         jLabel5.setText("Mms");
 
         jLabel6.setText("Email");
 
-        systemModem.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Don't Modify", "JL5", "JL4", "JL1", "JK6", "JK2" }));
+        systemModem.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Don't Modify", "JL5", "JL4", "JL1", "JK6" }));
 
         jLabel7.setText("Modem");
+
+        jLabel8.setText("Calendar");
+
+        systemEmail1.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Don't Modify", "AOSP Calendar", "TouchWiz Calendar" }));
+        systemEmail1.setEnabled(false);
 
         javax.swing.GroupLayout systemPanelLayout = new javax.swing.GroupLayout(systemPanel);
         systemPanel.setLayout(systemPanelLayout);
@@ -703,58 +683,49 @@ public class Apps extends javax.swing.JFrame {
             .addGroup(systemPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(systemPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel5)
+                    .addComponent(systemMms, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(systemModem, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel7))
+                .addGap(18, 18, 18)
+                .addGroup(systemPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(systemPanelLayout.createSequentialGroup()
+                        .addGap(2, 2, 2)
                         .addGroup(systemPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jComboBox2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel6))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 63, Short.MAX_VALUE)
-                        .addGroup(systemPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(touchWizMmsButton)
-                            .addComponent(mmsAospButton)
-                            .addComponent(mmsDontModifyButton))
-                        .addGap(86, 86, 86))
-                    .addGroup(systemPanelLayout.createSequentialGroup()
-                        .addComponent(jLabel5)
-                        .addContainerGap(321, Short.MAX_VALUE))
-                    .addGroup(systemPanelLayout.createSequentialGroup()
-                        .addComponent(systemMms, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap(247, Short.MAX_VALUE))
-                    .addGroup(systemPanelLayout.createSequentialGroup()
-                        .addGroup(systemPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(systemModem, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel7))
-                        .addContainerGap(257, Short.MAX_VALUE))))
+                            .addComponent(jLabel6)
+                            .addComponent(systemEmail, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(jLabel8)
+                    .addComponent(systemEmail1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(112, Short.MAX_VALUE))
         );
         systemPanelLayout.setVerticalGroup(
             systemPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(systemPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(systemPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(systemPanelLayout.createSequentialGroup()
-                        .addComponent(mmsAospButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(touchWizMmsButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(mmsDontModifyButton))
+                .addGroup(systemPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(systemPanelLayout.createSequentialGroup()
                         .addComponent(jLabel5)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(systemMms, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel7)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(systemModem, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(systemPanelLayout.createSequentialGroup()
                         .addComponent(jLabel6)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jComboBox2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel7)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(systemModem, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(21, 21, 21))
+                        .addComponent(systemEmail, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel8)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(systemEmail1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(66, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("System", systemPanel);
 
-        jLabel1.setFont(new java.awt.Font("Tahoma", 1, 12));
-        jLabel1.setText("VCK v0.5");
+        jLabel1.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        jLabel1.setText("VCK v0.6");
 
         jLabel2.setText("by Roman");
 
@@ -771,21 +742,12 @@ public class Apps extends javax.swing.JFrame {
 
         zipProgress.setFocusable(false);
 
-        jScrollPane1.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-
         console.setColumns(20);
         console.setEditable(false);
-        console.setFont(new java.awt.Font("Monospaced", 0, 12));
+        console.setFont(new java.awt.Font("Monospaced", 0, 12)); // NOI18N
         console.setRows(5);
         console.setWrapStyleWord(true);
         jScrollPane1.setViewportView(console);
-
-        downloadButton.setText("Download Files");
-        downloadButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                downloadButtonActionPerformed(evt);
-            }
-        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -798,19 +760,18 @@ public class Apps extends javax.swing.JFrame {
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 357, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(wipeDalvikCacheToggle)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(zipName)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jLabel4))
-                            .addComponent(zipProgress, 0, 0, Short.MAX_VALUE)
-                            .addComponent(generateZipButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(zipProgress, javax.swing.GroupLayout.Alignment.LEADING, 0, 0, Short.MAX_VALUE)
+                            .addComponent(generateZipButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                                 .addComponent(jLabel1)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addComponent(jLabel2))
-                            .addComponent(downloadButton, javax.swing.GroupLayout.DEFAULT_SIZE, 113, Short.MAX_VALUE))))
+                            .addComponent(wipeDalvikCacheToggle, javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
+                                .addComponent(zipName)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jLabel4)))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
@@ -830,9 +791,7 @@ public class Apps extends javax.swing.JFrame {
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(zipName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel4))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(downloadButton)
-                        .addGap(4, 4, 4)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(generateZipButton))
                     .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 191, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -863,62 +822,91 @@ public class Apps extends javax.swing.JFrame {
 
     private void processModem() {
         if (systemModem.getSelectedItem().equals("JL5")) {
-            String url = "http://www.rbirg.com/vibrant/kitchen/modems/JL5.bin";
-            String source = "kitchen/update/JL5.bin";
-            String target = "update/modem.bin";
+            String url = "http://www.rbirg.com/vibrant/kitchen/updates/JL5.bin";
+            String source = "kitchen/updates/JL5.bin";
+            String target = "updates/modem.bin";
             addApp(url, source, target);
             useModem = true;
         } else if (systemModem.getSelectedItem().equals("JL4")) {
-            String url = "http://www.rbirg.com/vibrant/kitchen/modems/JL4.bin";
-            String source = "kitchen/update/JL4.bin";
-            String target = "update/modem.bin";
+            String url = "http://www.rbirg.com/vibrant/kitchen/updates/JL4.bin";
+            String source = "kitchen/updates/JL4.bin";
+            String target = "updates/modem.bin";
             addApp(url, source, target);
             useModem = true;
         } else if (systemModem.getSelectedItem().equals("JL1")) {
-            String url = "http://www.rbirg.com/vibrant/kitchen/modems/JL1.bin";
-            String source = "kitchen/update/JL1.bin";
-            String target = "update/modem.bin";
+            String url = "http://www.rbirg.com/vibrant/kitchen/updates/JL1.bin";
+            String source = "kitchen/updates/JL1.bin";
+            String target = "updates/modem.bin";
             addApp(url, source, target);
             useModem = true;
         } else if (systemModem.getSelectedItem().equals("JL4")) {
-            String url = "http://www.rbirg.com/vibrant/kitchen/modems/JK6.bin";
-            String source = "kitchen/update/JK6.bin";
-            String target = "update/modem.bin";
+            String url = "http://www.rbirg.com/vibrant/kitchen/updates/JK6.bin";
+            String source = "kitchen/updates/JK6.bin";
+            String target = "updates/modem.bin";
             addApp(url, source, target);
             useModem = true;
         } else if (systemModem.getSelectedItem().equals("JK2")) {
-            String url = "http://www.rbirg.com/vibrant/kitchen/modems/JK2.bin";
-            String source = "kitchen/update/JK2.bin";
-            String target = "update/modem.bin";
+            String url = "http://www.rbirg.com/vibrant/kitchen/updates/JK2.bin";
+            String source = "kitchen/updates/JK2.bin";
+            String target = "updates/modem.bin";
             addApp(url, source, target);
             useModem = true;
         } else {
             removeApp("update/modem.bin");
         }
         if (useModem) {
-            addApp(urlBase + "/vibrant/kitchen/update/redband_ua", "kitchen/update/redband_ua", "update/redband_ua");
+            addApp("http://www.rbirg.com/vibrant/kitchen/updates/redbend_ua", "kitchen/updates/redbend_ua", "updates/redbend_ua");
         }
 
+    }
+
+    private void processCalendar() {
+        if (systemEmail.getSelectedItem().equals("TouchWiz Email")) {
+            String url = "http://www.rbirg.com/vibrant/kitchen/system/app/Calendar-TW.apk";
+            String source = "kitchen/system/app/Calendar-TW.apk";
+            String target = "system/app/Calendar.apk";
+
+            addApp(url, source, target);
+            addApp(urlBase + "/kitchen/system/app/CalendarProvider-TW.apk", "/kitchen/system/app/CalendarProvider-TW.apk", "system/app/CalendarProvider.apk");
+
+        } else if (systemEmail.getSelectedItem().equals("AOSP Email")) {
+            String url = "http://www.rbirg.com/vibrant/kitchen/system/app/Calendar-AOSP.apk";
+            String source = "kitchen/system/app/Calendar-AOSP.apk";
+            String target = "system/app/Calendar.apk";
+
+            addApp(url, source, target);
+            addApp(urlBase + "/kitchen/system/app/CalendarProvider-AOSP.apk", "/kitchen/system/app/CalendarProvider-AOSP.apk", "system/app/CalendarProvider.apk");
+        } else {
+
+            removeApp("system/app/Mms.apk");
+        }
     }
 
     private void generateZipButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_generateZipButtonActionPerformed
         //after files are downloaded they need to be zipped, so this has to be called from the zip thread
         //downloadFiles();
+        processMms();
+        processModem();
 
-         Apps.getInstance().zipProgress.setVisible(true);
-                //System.out.println("sources size before zip creation: " + sources.size());
-                Zip z = new Zip(Apps.files, Apps.getInstance().zipName.getText());
-                z.addPropertyChangeListener(
-                        new PropertyChangeListener() {
+        for (DownloadFile f : files) {
+            Zip.getInstance().addToQueue(f);
+            //System.out.println("adding file to queue");
+        }
 
-                            public void propertyChange(PropertyChangeEvent evt) {
-                                if ("progress".equals(evt.getPropertyName())) {
-                                    Apps.getInstance().zipProgress.setValue((Integer) evt.getNewValue());
-                                }
-                            }
-                        });
+        Apps.getInstance().zipProgress.setVisible(true);
+        //System.out.println("sources size before zip creation: " + sources.size());
+        Zip z = new Zip(Apps.files, Apps.getInstance().zipName.getText());
+        z.addPropertyChangeListener(
+                new PropertyChangeListener() {
 
-                z.execute();
+                    public void propertyChange(PropertyChangeEvent evt) {
+                        if ("progress".equals(evt.getPropertyName())) {
+                            Apps.getInstance().zipProgress.setValue((Integer) evt.getNewValue());
+                        }
+                    }
+                });
+
+        z.execute();
 
         unselectAll();
     }//GEN-LAST:event_generateZipButtonActionPerformed
@@ -944,12 +932,12 @@ public class Apps extends javax.swing.JFrame {
         }
     }
 
-    private static void addApp(String s, String t) {
+    private void addApp(String s, String t) {
         addApp(null, s, t);
     }
 
-    private static void addApp(String url, String sourceLoc, String targetLoc) {
-        this.getInstance().generateZipButton.setEnabled(false);
+    private void addApp(String url, String sourceLoc, String targetLoc) {
+        //this.getInstance().generateZipButton.setEnabled(false);
         DownloadFile f = new DownloadFile(url, sourceLoc, targetLoc);
         File folder = new File(sourceLoc);
 
@@ -957,11 +945,11 @@ public class Apps extends javax.swing.JFrame {
         files.add(f);
         //System.out.println("added file to queue");
 //        if (url != null) {
-//            Download.getInstance().addToQueue(f);
+//            Download1.getInstance().addToQueue(f);
 //        }
     }
 
-    public static void removeApp(String target) {
+    public void removeApp(String target) {
 
         HashSet<DownloadFile> h = new HashSet<DownloadFile>(files);
         files.clear();
@@ -986,9 +974,8 @@ public class Apps extends javax.swing.JFrame {
     private void formComponentShown(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentShown
         cleanUp();
         VCKTools.createSums();
-        Download.getInstance().execute();
+        //Download1.getInstance().execute();
         createDirectories();
-        this.generateZipButton.setEnabled(false);
     }//GEN-LAST:event_formComponentShown
 
     private void wipeDalvikCacheToggleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_wipeDalvikCacheToggleActionPerformed
@@ -1005,31 +992,6 @@ public class Apps extends javax.swing.JFrame {
 
     private void systemMmsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_systemMmsActionPerformed
 }//GEN-LAST:event_systemMmsActionPerformed
-
-    private void mmsDontModifyButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mmsDontModifyButtonActionPerformed
-}//GEN-LAST:event_mmsDontModifyButtonActionPerformed
-
-    private void touchWizMmsButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_touchWizMmsButtonActionPerformed
-        String url = "http://www.rbirg.com/vibrant/kitchen/system/app/Mms-AOSP.apk";
-        String source = "kitchen/system/app/Mms-TW.apk";
-        String target = "system/app/Mms.apk";
-        if (this.touchWizMmsButton.isSelected()) {
-            addApp(url, source, target);
-        } else {
-            removeApp(target);
-        }
-}//GEN-LAST:event_touchWizMmsButtonActionPerformed
-
-    private void mmsAospButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mmsAospButtonActionPerformed
-        String url = "http://www.rbirg.com/vibrant/kitchen/system/app/Mms-TW.apk";
-        String source = "kitchen/system/app/Mms-AOSP.apk";
-        String target = "system/app/Mms.apk";
-        if (this.mmsAospButton.isSelected()) {
-            addApp(url, source, target);
-        } else {
-            removeApp(target);
-        }
-}//GEN-LAST:event_mmsAospButtonActionPerformed
 
     private void vibrantTmoTVActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantTmoTVActionPerformed
         String target = "system/app/com.mobitv.client.mobitv.apk";
@@ -1388,20 +1350,16 @@ public class Apps extends javax.swing.JFrame {
         }
 }//GEN-LAST:event_utilitiesTitaniumButtonActionPerformed
 
-    private void downloadButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_downloadButtonActionPerformed
-        downloadFiles();
-    }//GEN-LAST:event_downloadButtonActionPerformed
-
     private void downloadFiles() {
         processMms();
         processModem();
 
         for (DownloadFile f : files) {
-            Download.getInstance().addToQueue(f);
+            Zip.getInstance().addToQueue(f);
             //System.out.println("adding file to queue");
         }
         //.out.println("starting");
-        Download.getInstance().start();
+        Download1.getInstance().start();
     }
 
     public void writeConsoleMessage(String s) {
@@ -1418,8 +1376,10 @@ public class Apps extends javax.swing.JFrame {
      */
     public static void main(String args[]) {
         try {
-            UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
+            //UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
             //UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
+            UIManager.setLookAndFeel(
+                    UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             System.out.println("Look and feel failure");
         }
@@ -1437,11 +1397,9 @@ public class Apps extends javax.swing.JFrame {
     private javax.swing.ButtonGroup ModemGroup;
     private javax.swing.JCheckBox VibrantVisualVoicemail;
     private javax.swing.JTextArea console;
-    private javax.swing.JButton downloadButton;
     public javax.swing.JButton generateZipButton;
     private javax.swing.JCheckBox jCheckBox2;
     private javax.swing.JCheckBox jCheckBox5;
-    private javax.swing.JComboBox jComboBox2;
     private javax.swing.JFileChooser jFileChooser1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
@@ -1449,6 +1407,7 @@ public class Apps extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JCheckBox launcherTouchWiz;
@@ -1460,12 +1419,11 @@ public class Apps extends javax.swing.JFrame {
     private javax.swing.JCheckBox miscCarHome;
     private javax.swing.JCheckBox miscDockHome;
     private javax.swing.JCheckBox miscGingerbreadkb;
-    private javax.swing.JRadioButton mmsAospButton;
-    private javax.swing.JRadioButton mmsDontModifyButton;
+    private javax.swing.JComboBox systemEmail;
+    private javax.swing.JComboBox systemEmail1;
     private javax.swing.JComboBox systemMms;
     private javax.swing.JComboBox systemModem;
     private javax.swing.JPanel systemPanel;
-    private javax.swing.JRadioButton touchWizMmsButton;
     private javax.swing.JPanel utilitiesPanel;
     private javax.swing.JCheckBox utilitiesQuickBootButton;
     private javax.swing.JCheckBox utilitiesRomManagerButton;
