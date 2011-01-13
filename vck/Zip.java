@@ -4,18 +4,27 @@
  */
 package vck;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.String;
+import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
+import org.apache.commons.io.IOUtils;
+
+
 
 /**
  *
@@ -95,10 +104,9 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
                 try {
                     Apps.getInstance().writeConsoleMessage("downloading  " + wf.getTarget());
                     if (!VCKTools.download(wf)) {
-                         Apps.getInstance().writeConsoleMessage(wf.getTarget() + " download failed");
+                        Apps.getInstance().writeConsoleMessage(wf.getTarget() + " download failed");
                         Apps.getInstance().removeApp(wf.getTarget());
                     } else {
-                         
                     }
                 } catch (FileNotFoundException fof) {
                     Apps.getInstance().writeConsoleMessage(wf.getTarget() + " was not found on the web server");
@@ -142,7 +150,7 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
             // Compress the files
             for (int i = 0; i < sources.size(); i++) {
                 int progress = (int) (((double) (i + 1) / sources.size()) * 100);
-                progress = (progress/2) + 50;
+                progress = (progress / 2) + 50;
                 setProgress(progress);
                 //Apps.setZipProgress(progress);
 
@@ -224,5 +232,62 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
 
     public void process() {
         processDownload();
+    }
+
+    public void unzipArchive(File archive, File outputDir) {
+        try {
+            ZipFile zipfile = new ZipFile(archive);
+            for (Enumeration e = zipfile.entries(); e.hasMoreElements();) {
+                ZipEntry entry = (ZipEntry) e.nextElement();
+                unzipEntry(zipfile, entry, outputDir);
+            }
+        } catch (Exception e) {
+            System.out.println("Error while extracting file " + archive + ", " + e);
+            e.printStackTrace();
+        }
+    }
+
+    private void unzipEntry(ZipFile zipfile, ZipEntry entry, File outputDir) throws IOException {
+
+        if (entry.isDirectory()) {
+            createDir(new File(outputDir, entry.getName()));
+            return;
+        }
+
+        File outputFile = new File(outputDir, entry.getName());
+        if (!outputFile.getParentFile().exists()) {
+            createDir(outputFile.getParentFile());
+        }
+
+        System.out.println("Extracting: " + entry);
+        BufferedInputStream inputStream = new BufferedInputStream(zipfile.getInputStream(entry));
+        BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile));
+
+        try {
+            IOUtils.copy(inputStream, outputStream);
+        } finally {
+            outputStream.close();
+            inputStream.close();
+        }
+    }
+
+    private void createDir(File dir) {
+        System.out.println("Creating dir " + dir.getName());
+        if (!dir.mkdirs()) {
+            throw new RuntimeException("Can not create dir " + dir);
+        }
+    }
+
+    public static void unGzip(String zipIn, String fileOut) throws IOException {
+        File f = new File(zipIn );
+        GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(f));
+
+        OutputStream out = new FileOutputStream(new File(fileOut));
+
+        byte[] buf = new byte[102400]; //size can be changed according to programmer's need.
+        int len;
+        while ((len = gzipInputStream.read(buf)) > 0) {
+            out.write(buf, 0, len);
+        }
     }
 }

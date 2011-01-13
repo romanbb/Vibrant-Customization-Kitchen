@@ -65,29 +65,30 @@ public class Apps extends javax.swing.JFrame {
     }
 
     private void unselectAll() {
-        for (Component c : utilitiesPanel.getComponents()) {
-            ((JCheckBox) c).setSelected(false);
-        }
-
-        for (Component c : launchersPanel.getComponents()) {
-            ((JCheckBox) c).setSelected(false);
-        }
-
-        for (Component c : vibrantApps.getComponents()) {
-            ((JCheckBox) c).setSelected(false);
-        }
-
-        for (Component c : systemPanel.getComponents()) {
-            try {
+        try {
+            for (Component c : utilitiesPanel.getComponents()) {
                 ((JCheckBox) c).setSelected(false);
-            } catch (Exception e) {
-                try {
-                    ((JComboBox) c).setSelectedIndex(0);
-                } catch (Exception e1) {
-                }
             }
 
+            for (Component c : launchersPanel.getComponents()) {
+                ((JCheckBox) c).setSelected(false);
+            }
 
+            for (Component c : vibrantApps.getComponents()) {
+                ((JCheckBox) c).setSelected(false);
+            }
+
+            for (Component c : systemPanel.getComponents()) {
+                try {
+                    ((JCheckBox) c).setSelected(false);
+                } catch (Exception e) {
+                    try {
+                        ((JComboBox) c).setSelectedIndex(0);
+                    } catch (Exception e1) {
+                    }
+                }
+            }
+        } catch (Exception e) {
         }
 
 
@@ -146,6 +147,8 @@ public class Apps extends javax.swing.JFrame {
             if (!files.isEmpty()) {
                 out.println("show_progress 0." + i + " 0");
             }
+            if(useData) out.println("copy_dir PACKAGE:data DATA:");
+            if(useSystem) out.println("copy_dir PACKAGE:system SYSTEM:");
             for (DownloadFile entry : files) {
 
                 if (!useData && entry.getTarget().startsWith("data")) {
@@ -158,8 +161,8 @@ public class Apps extends javax.swing.JFrame {
                     out.println("copy_dir PACKAGE:system SYSTEM:");
                     break;
                 }
-
             }
+
             out.println("show_progress 0." + i + " 10\n");
             i++;
 
@@ -210,6 +213,11 @@ public class Apps extends javax.swing.JFrame {
         utilitiesRomManagerButton = new javax.swing.JCheckBox();
         utilitiesSpareParts = new javax.swing.JCheckBox();
         utilitiesSgsTools = new javax.swing.JCheckBox();
+        utilitiesWirelessAdb = new javax.swing.JCheckBox();
+        jPanel1 = new javax.swing.JPanel();
+        utilitiesSystem = new javax.swing.JCheckBox();
+        utilitiesData = new javax.swing.JCheckBox();
+        wipeDalvikCacheToggle = new javax.swing.JCheckBox();
         launchersPanel = new javax.swing.JPanel();
         launchersLauncherPro = new javax.swing.JCheckBox();
         launchersAdw = new javax.swing.JCheckBox();
@@ -249,7 +257,6 @@ public class Apps extends javax.swing.JFrame {
         systemEmail1 = new javax.swing.JComboBox();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
-        wipeDalvikCacheToggle = new javax.swing.JCheckBox();
         zipName = new javax.swing.JTextField();
         jLabel4 = new javax.swing.JLabel();
         zipProgress = new javax.swing.JProgressBar();
@@ -317,6 +324,59 @@ public class Apps extends javax.swing.JFrame {
             }
         });
 
+        utilitiesWirelessAdb.setText("Wireless ADB");
+        utilitiesWirelessAdb.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                utilitiesWirelessAdbActionPerformed(evt);
+            }
+        });
+
+        jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder("Custom Flashable"));
+
+        utilitiesSystem.setText("system");
+        utilitiesSystem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                utilitiesSystemActionPerformed(evt);
+            }
+        });
+
+        utilitiesData.setText("data");
+        utilitiesData.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                utilitiesDataActionPerformed(evt);
+            }
+        });
+
+        wipeDalvikCacheToggle.setText("wipe Dalvik");
+        wipeDalvikCacheToggle.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                wipeDalvikCacheToggleActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(utilitiesSystem)
+                    .addComponent(utilitiesData)
+                    .addComponent(wipeDalvikCacheToggle))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addComponent(utilitiesSystem)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(utilitiesData)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 14, Short.MAX_VALUE)
+                .addComponent(wipeDalvikCacheToggle)
+                .addContainerGap())
+        );
+
         javax.swing.GroupLayout utilitiesPanelLayout = new javax.swing.GroupLayout(utilitiesPanel);
         utilitiesPanel.setLayout(utilitiesPanelLayout);
         utilitiesPanelLayout.setHorizontalGroup(
@@ -327,24 +387,34 @@ public class Apps extends javax.swing.JFrame {
                     .addComponent(utilitiesTitaniumButton)
                     .addComponent(utilitiesQuickBootButton)
                     .addComponent(utilitiesRomManagerButton)
+                    .addComponent(utilitiesSpareParts)
                     .addComponent(utilitiesSgsTools)
-                    .addComponent(utilitiesSpareParts))
-                .addContainerGap(243, Short.MAX_VALUE))
+                    .addComponent(utilitiesWirelessAdb))
+                .addGap(110, 110, 110)
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(18, 18, 18))
         );
         utilitiesPanelLayout.setVerticalGroup(
             utilitiesPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(utilitiesPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(utilitiesTitaniumButton)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(utilitiesQuickBootButton)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(utilitiesRomManagerButton)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(utilitiesSpareParts)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(utilitiesSgsTools)
-                .addContainerGap(41, Short.MAX_VALUE))
+                .addGroup(utilitiesPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(utilitiesPanelLayout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(utilitiesTitaniumButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(utilitiesQuickBootButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(utilitiesRomManagerButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(utilitiesSpareParts)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(utilitiesSgsTools)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(utilitiesWirelessAdb))
+                    .addGroup(utilitiesPanelLayout.createSequentialGroup()
+                        .addGap(20, 20, 20)
+                        .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(18, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Utilities", utilitiesPanel);
@@ -606,7 +676,7 @@ public class Apps extends javax.swing.JFrame {
                             .addComponent(VibrantVisualVoicemail)
                             .addComponent(vibrantThinkFree)))
                     .addComponent(vibrantSlacker))
-                .addContainerGap(69, Short.MAX_VALUE))
+                .addContainerGap(57, Short.MAX_VALUE))
         );
         vibrantAppsLayout.setVerticalGroup(
             vibrantAppsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -696,7 +766,7 @@ public class Apps extends javax.swing.JFrame {
                             .addComponent(systemEmail, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addComponent(jLabel8)
                     .addComponent(systemEmail1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(112, Short.MAX_VALUE))
+                .addContainerGap(100, Short.MAX_VALUE))
         );
         systemPanelLayout.setVerticalGroup(
             systemPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -725,16 +795,9 @@ public class Apps extends javax.swing.JFrame {
         jTabbedPane1.addTab("System", systemPanel);
 
         jLabel1.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
-        jLabel1.setText("VCK v0.6");
+        jLabel1.setText("VCK v0.7");
 
         jLabel2.setText("by Roman");
-
-        wipeDalvikCacheToggle.setText("Wipe Dalvik");
-        wipeDalvikCacheToggle.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                wipeDalvikCacheToggleActionPerformed(evt);
-            }
-        });
 
         zipName.setText("flash");
 
@@ -745,6 +808,7 @@ public class Apps extends javax.swing.JFrame {
         console.setColumns(20);
         console.setEditable(false);
         console.setFont(new java.awt.Font("Monospaced", 0, 12)); // NOI18N
+        console.setLineWrap(true);
         console.setRows(5);
         console.setWrapStyleWord(true);
         jScrollPane1.setViewportView(console);
@@ -753,50 +817,49 @@ public class Apps extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 466, Short.MAX_VALUE)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 357, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 345, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(zipProgress, javax.swing.GroupLayout.Alignment.LEADING, 0, 0, Short.MAX_VALUE)
-                            .addComponent(generateZipButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                                .addComponent(jLabel1)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(jLabel2))
-                            .addComponent(wipeDalvikCacheToggle, javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                                .addComponent(zipName)
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addComponent(zipProgress, javax.swing.GroupLayout.Alignment.LEADING, 0, 0, Short.MAX_VALUE)
+                                .addComponent(generateZipButton, javax.swing.GroupLayout.Alignment.LEADING))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(zipName, javax.swing.GroupLayout.DEFAULT_SIZE, 76, Short.MAX_VALUE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jLabel4)))))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addComponent(jLabel4)
+                                .addGap(6, 6, 6))
+                            .addComponent(jLabel1)
+                            .addGroup(layout.createSequentialGroup()
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 55, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jLabel2)))))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel1)
-                            .addComponent(jLabel2))
+                        .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(zipProgress, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(wipeDalvikCacheToggle)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 87, Short.MAX_VALUE)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(zipName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel4))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(zipProgress, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(generateZipButton))
                     .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 191, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         pack();
@@ -1350,6 +1413,34 @@ public class Apps extends javax.swing.JFrame {
         }
 }//GEN-LAST:event_utilitiesTitaniumButtonActionPerformed
 
+    private void utilitiesWirelessAdbActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_utilitiesWirelessAdbActionPerformed
+        String target = "data/app/siir.es.adbWireless.apk";
+        String source = "kitchen/" + target;
+        String url = urlBase + source;
+
+        if (((JCheckBox) evt.getSource()).isSelected()) {
+            addApp(url, source, target);
+        } else {
+            removeApp(target);
+        }
+    }//GEN-LAST:event_utilitiesWirelessAdbActionPerformed
+
+    private void utilitiesSystemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_utilitiesSystemActionPerformed
+        if (((JCheckBox) evt.getSource()).isSelected()) {
+            this.useSystem = true;
+        } else {
+            this.useSystem = false;
+        }
+    }//GEN-LAST:event_utilitiesSystemActionPerformed
+
+    private void utilitiesDataActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_utilitiesDataActionPerformed
+        if (((JCheckBox) evt.getSource()).isSelected()) {
+            this.useData = true;
+        } else {
+            this.useData = false;
+        }
+    }//GEN-LAST:event_utilitiesDataActionPerformed
+
     private void downloadFiles() {
         processMms();
         processModem();
@@ -1408,6 +1499,7 @@ public class Apps extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
+    private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JCheckBox launcherTouchWiz;
@@ -1424,12 +1516,15 @@ public class Apps extends javax.swing.JFrame {
     private javax.swing.JComboBox systemMms;
     private javax.swing.JComboBox systemModem;
     private javax.swing.JPanel systemPanel;
+    private javax.swing.JCheckBox utilitiesData;
     private javax.swing.JPanel utilitiesPanel;
     private javax.swing.JCheckBox utilitiesQuickBootButton;
     private javax.swing.JCheckBox utilitiesRomManagerButton;
     private javax.swing.JCheckBox utilitiesSgsTools;
     private javax.swing.JCheckBox utilitiesSpareParts;
+    private javax.swing.JCheckBox utilitiesSystem;
     private javax.swing.JCheckBox utilitiesTitaniumButton;
+    private javax.swing.JCheckBox utilitiesWirelessAdb;
     private javax.swing.JCheckBox vibrantAllShare;
     private javax.swing.JCheckBox vibrantAmazon;
     private javax.swing.JPanel vibrantApps;
