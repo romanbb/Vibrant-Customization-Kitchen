@@ -11,13 +11,17 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Scanner;
+import javax.swing.DefaultListModel;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.UIManager;
@@ -30,9 +34,13 @@ public class Apps extends javax.swing.JFrame {
 
     //static ArrayList<String> sources = new ArrayList<String>();
     static ArrayList<DownloadFile> files = new ArrayList<DownloadFile>();
+    static ArrayList<Repo> repos = new ArrayList<Repo>();
+    static ArrayList<DownloadFile> filesToDownload = new ArrayList<DownloadFile>();
     static boolean useSystem, useData, useLib, useModem, wipeDalvik;
     static Apps instance;
     static String urlBase = "http://rbirg.com/vibrant/";
+    static Repo selectedRepo = null;
+    static String systemPrefix = "system/app/";
 
     public Apps() {
         if (instance == null) {
@@ -41,6 +49,9 @@ public class Apps extends javax.swing.JFrame {
         setLocationRelativeTo(null);
         initComponents();
         Apps.getInstance().zipProgress.setVisible(false);
+        initializeRepo();
+        this.optionsChangeSystemLocButton.setEnabled(false);
+        this.statusLabel.setText("");
     }
 
     public static Apps getInstance() {
@@ -48,6 +59,48 @@ public class Apps extends javax.swing.JFrame {
             instance = new Apps();
         }
         return instance;
+    }
+
+    private void initializeRepo() {
+        try {
+            VCKTools.download(new DownloadFile("http://rbirg.com/vibrant/kitchen/repo/masterlist.txt", "kitchen/repo/masterlist.txt"));
+            File masterlist = new File("kitchen/repo/masterlist.txt");
+            Scanner s = null;
+            DefaultListModel m = new DefaultListModel();
+            try {
+                s = new Scanner(masterlist);
+                s.useDelimiter("\\s*;\\s*");
+                while (s.hasNext()) {
+                    String devName = s.next();
+                    String repoUrl = s.next();
+                    String upkeeper = s.next();
+                    repos.add(new Repo(devName, repoUrl, upkeeper));
+                    m.addElement(repos.get(repos.size() - 1));
+                }
+                repoList.setModel(m);
+            } catch (FileNotFoundException ex) {
+            }
+            //all repos have been added, now add to the lists!
+
+            for (Repo repo : repos) {
+                repo.model.addElement(repo);
+
+                if (selectedRepo == null || selectedRepo.getFiles().isEmpty()) {
+                    repo.model.addElement("No files found");
+                } else {
+                    for (DownloadFile i : selectedRepo.getFiles()) {
+                        repo.model.addElement(i);
+                    }
+                }
+            }
+            repoList.repaint();
+        } catch (FileNotFoundException fnf) {
+            this.writeConsoleMessage("Couldn't download the repo list from the server. \n ***Please restart the program.*****");
+            fnf.printStackTrace();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
     }
 
     private void createDirectories() {
@@ -58,38 +111,62 @@ public class Apps extends javax.swing.JFrame {
         new File(prefix + "system/lib").mkdirs();
         new File(prefix + "updates").mkdirs();
         new File(prefix + "META-INF/com/google/android").mkdirs();
+        new File(prefix + "repo").mkdirs();
 
         addApp(urlBase + "kitchen/META-INF/CERT.RSA", "kitchen/META-INF/CERT.RSA", "META-INF/CERT.RSA");
         addApp(urlBase + "kitchen/META-INF/CERT.SF", "kitchen/META-INF/CERT.SF", "META-INF/CERT.SF");
         addApp(urlBase + "kitchen/META-INF/MANIFEST.MF", "kitchen/META-INF/MANIFEST.MF", "META-INF/MANIFEST.MF");
     }
 
-    private void unselectAll() {
-        try {
-            for (Component c : utilitiesPanel.getComponents()) {
-                ((JCheckBox) c).setSelected(false);
-            }
+    public void unselectAll() {
 
-            for (Component c : launchersPanel.getComponents()) {
+        for (Component c : utilitiesPanel.getComponents()) {
+            try {
                 ((JCheckBox) c).setSelected(false);
+            } catch (ClassCastException cce) {
             }
+        }
 
-            for (Component c : vibrantApps.getComponents()) {
+        for (Component c : customFlashPanel.getComponents()) {
+            try {
                 ((JCheckBox) c).setSelected(false);
+            } catch (ClassCastException cce) {
             }
+        }
 
-            for (Component c : systemPanel.getComponents()) {
+        for (Component c : launchersPanel.getComponents()) {
+            try {
+                ((JCheckBox) c).setSelected(false);
+            } catch (ClassCastException cce) {
+            }
+        }
+
+        for (Component c : vibrantApps.getComponents()) {
+            try {
+                ((JCheckBox) c).setSelected(false);
+            } catch (ClassCastException cce) {
+            }
+        }
+
+        for (Component c : systemPanel.getComponents()) {
+            try {
+                ((JCheckBox) c).setSelected(false);
+            } catch (Exception e) {
                 try {
-                    ((JCheckBox) c).setSelected(false);
-                } catch (Exception e) {
-                    try {
-                        ((JComboBox) c).setSelectedIndex(0);
-                    } catch (Exception e1) {
-                    }
+                    ((JComboBox) c).setSelectedIndex(0);
+                } catch (Exception e1) {
                 }
             }
-        } catch (Exception e) {
         }
+
+        files.clear();
+        filesToDownload.clear();
+        //initializeRepo();
+        //((DefaultListModel) repoItems.getModel()).clear();
+        updateRepoItemList();
+        //this.console.setText("");
+
+        repaint();
 
 
     }
@@ -147,8 +224,12 @@ public class Apps extends javax.swing.JFrame {
             if (!files.isEmpty()) {
                 out.println("show_progress 0." + i + " 0");
             }
-            if(useData) out.println("copy_dir PACKAGE:data DATA:");
-            if(useSystem) out.println("copy_dir PACKAGE:system SYSTEM:");
+            if (useData) {
+                out.println("copy_dir PACKAGE:data DATA:");
+            }
+            if (useSystem) {
+                out.println("copy_dir PACKAGE:system SYSTEM:");
+            }
             for (DownloadFile entry : files) {
 
                 if (!useData && entry.getTarget().startsWith("data")) {
@@ -214,7 +295,7 @@ public class Apps extends javax.swing.JFrame {
         utilitiesSpareParts = new javax.swing.JCheckBox();
         utilitiesSgsTools = new javax.swing.JCheckBox();
         utilitiesWirelessAdb = new javax.swing.JCheckBox();
-        jPanel1 = new javax.swing.JPanel();
+        customFlashPanel = new javax.swing.JPanel();
         utilitiesSystem = new javax.swing.JCheckBox();
         utilitiesData = new javax.swing.JCheckBox();
         wipeDalvikCacheToggle = new javax.swing.JCheckBox();
@@ -255,13 +336,29 @@ public class Apps extends javax.swing.JFrame {
         jLabel7 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
         systemEmail1 = new javax.swing.JComboBox();
-        jLabel1 = new javax.swing.JLabel();
-        jLabel2 = new javax.swing.JLabel();
+        repoPanel = new javax.swing.JPanel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        repoList = new javax.swing.JList();
+        jLabel3 = new javax.swing.JLabel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        repoItems = new javax.swing.JList();
+        jLabel9 = new javax.swing.JLabel();
+        addSelectedFilesButton = new javax.swing.JButton();
+        optionsTab = new javax.swing.JPanel();
+        jLabel10 = new javax.swing.JLabel();
+        optionsSystemAppsLocationField = new javax.swing.JTextField();
+        jLabel11 = new javax.swing.JLabel();
+        optionsChangeSystemLocButton = new javax.swing.JButton();
         zipName = new javax.swing.JTextField();
         jLabel4 = new javax.swing.JLabel();
+        jLabel12 = new javax.swing.JLabel();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
         zipProgress = new javax.swing.JProgressBar();
         jScrollPane1 = new javax.swing.JScrollPane();
         console = new javax.swing.JTextArea();
+        jButton2 = new javax.swing.JButton();
+        statusLabel = new javax.swing.JLabel();
 
         jFileChooser1.setDialogType(javax.swing.JFileChooser.SAVE_DIALOG);
 
@@ -331,7 +428,7 @@ public class Apps extends javax.swing.JFrame {
             }
         });
 
-        jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder("Custom Flashable"));
+        customFlashPanel.setBorder(javax.swing.BorderFactory.createTitledBorder("Custom Flashable"));
 
         utilitiesSystem.setText("system");
         utilitiesSystem.addActionListener(new java.awt.event.ActionListener() {
@@ -354,21 +451,21 @@ public class Apps extends javax.swing.JFrame {
             }
         });
 
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
+        javax.swing.GroupLayout customFlashPanelLayout = new javax.swing.GroupLayout(customFlashPanel);
+        customFlashPanel.setLayout(customFlashPanelLayout);
+        customFlashPanelLayout.setHorizontalGroup(
+            customFlashPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(customFlashPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(customFlashPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(utilitiesSystem)
                     .addComponent(utilitiesData)
                     .addComponent(wipeDalvikCacheToggle))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
+        customFlashPanelLayout.setVerticalGroup(
+            customFlashPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(customFlashPanelLayout.createSequentialGroup()
                 .addComponent(utilitiesSystem)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(utilitiesData)
@@ -391,7 +488,7 @@ public class Apps extends javax.swing.JFrame {
                     .addComponent(utilitiesSgsTools)
                     .addComponent(utilitiesWirelessAdb))
                 .addGap(110, 110, 110)
-                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(customFlashPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGap(18, 18, 18))
         );
         utilitiesPanelLayout.setVerticalGroup(
@@ -413,7 +510,7 @@ public class Apps extends javax.swing.JFrame {
                         .addComponent(utilitiesWirelessAdb))
                     .addGroup(utilitiesPanelLayout.createSequentialGroup()
                         .addGap(20, 20, 20)
-                        .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(customFlashPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(18, Short.MAX_VALUE))
         );
 
@@ -794,24 +891,183 @@ public class Apps extends javax.swing.JFrame {
 
         jTabbedPane1.addTab("System", systemPanel);
 
-        jLabel1.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
-        jLabel1.setText("VCK v0.7");
+        repoList.setModel(new javax.swing.AbstractListModel() {
+            String[] strings = { "Dev 1", "Dev 2", "Dev 3", "Dev 4" };
+            public int getSize() { return strings.length; }
+            public Object getElementAt(int i) { return strings[i]; }
+        });
+        repoList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        repoList.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                repoListMouseClicked(evt);
+            }
+        });
+        repoList.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                repoListPropertyChange(evt);
+            }
+        });
+        jScrollPane2.setViewportView(repoList);
 
-        jLabel2.setText("by Roman");
+        jLabel3.setText("Repositories");
+
+        repoItems.setModel(new javax.swing.AbstractListModel() {
+            String[] strings = { "Empty :(" };
+            public int getSize() { return strings.length; }
+            public Object getElementAt(int i) { return strings[i]; }
+        });
+        repoItems.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                repoItemsMouseClicked(evt);
+            }
+        });
+        jScrollPane3.setViewportView(repoItems);
+
+        jLabel9.setText("Items (select multiple with CTRL)");
+
+        addSelectedFilesButton.setText("Add Selected Files");
+        addSelectedFilesButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                addSelectedFilesButtonActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout repoPanelLayout = new javax.swing.GroupLayout(repoPanel);
+        repoPanel.setLayout(repoPanelLayout);
+        repoPanelLayout.setHorizontalGroup(
+            repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, repoPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(addSelectedFilesButton)
+                    .addGroup(repoPanelLayout.createSequentialGroup()
+                        .addGroup(repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel3))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel9)
+                            .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 214, Short.MAX_VALUE))))
+                .addContainerGap())
+        );
+        repoPanelLayout.setVerticalGroup(
+            repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(repoPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3)
+                    .addComponent(jLabel9))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(addSelectedFilesButton)
+                .addContainerGap())
+        );
+
+        jTabbedPane1.addTab("Repo", repoPanel);
+
+        jLabel10.setText("Location of system apps");
+
+        optionsSystemAppsLocationField.setText("system/app");
+        optionsSystemAppsLocationField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                optionsSystemAppsLocationFieldActionPerformed(evt);
+            }
+        });
+        optionsSystemAppsLocationField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                optionsSystemAppsLocationFieldKeyTyped(evt);
+            }
+        });
+
+        jLabel11.setText("note: no slash in front or end");
+
+        optionsChangeSystemLocButton.setText("Change");
+        optionsChangeSystemLocButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                optionsChangeSystemLocButtonActionPerformed(evt);
+            }
+        });
 
         zipName.setText("flash");
 
         jLabel4.setText(".zip");
 
+        jLabel12.setText("generated zip name");
+
+        javax.swing.GroupLayout optionsTabLayout = new javax.swing.GroupLayout(optionsTab);
+        optionsTab.setLayout(optionsTabLayout);
+        optionsTabLayout.setHorizontalGroup(
+            optionsTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(optionsTabLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(optionsTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(optionsTabLayout.createSequentialGroup()
+                        .addGroup(optionsTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel12)
+                            .addGroup(optionsTabLayout.createSequentialGroup()
+                                .addComponent(zipName, javax.swing.GroupLayout.DEFAULT_SIZE, 102, Short.MAX_VALUE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jLabel4)))
+                        .addGap(207, 207, 207))
+                    .addGroup(optionsTabLayout.createSequentialGroup()
+                        .addGroup(optionsTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(optionsTabLayout.createSequentialGroup()
+                                .addGroup(optionsTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                    .addComponent(optionsSystemAppsLocationField, javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel10, javax.swing.GroupLayout.Alignment.LEADING))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(optionsChangeSystemLocButton))
+                            .addComponent(jLabel11))
+                        .addContainerGap(139, Short.MAX_VALUE))))
+        );
+        optionsTabLayout.setVerticalGroup(
+            optionsTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(optionsTabLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel12)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(optionsTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(zipName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel4))
+                .addGap(18, 18, 18)
+                .addComponent(jLabel10)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(optionsTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(optionsSystemAppsLocationField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(optionsChangeSystemLocButton))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel11)
+                .addContainerGap(31, Short.MAX_VALUE))
+        );
+
+        jTabbedPane1.addTab("Options", optionsTab);
+
+        jLabel1.setFont(new java.awt.Font("Tahoma", 1, 12));
+        jLabel1.setText("VCK v0.8");
+
+        jLabel2.setText("by Roman");
+
         zipProgress.setFocusable(false);
 
         console.setColumns(20);
         console.setEditable(false);
-        console.setFont(new java.awt.Font("Monospaced", 0, 12)); // NOI18N
+        console.setFont(new java.awt.Font("Monospaced", 0, 12));
         console.setLineWrap(true);
         console.setRows(5);
         console.setWrapStyleWord(true);
         jScrollPane1.setViewportView(console);
+
+        jButton2.setText("Start Over");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
+
+        statusLabel.setText("Status");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -823,35 +1079,33 @@ public class Apps extends javax.swing.JFrame {
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 466, Short.MAX_VALUE)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 345, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                .addComponent(zipProgress, javax.swing.GroupLayout.Alignment.LEADING, 0, 0, Short.MAX_VALUE)
-                                .addComponent(generateZipButton, javax.swing.GroupLayout.Alignment.LEADING))
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(zipName, javax.swing.GroupLayout.DEFAULT_SIZE, 76, Short.MAX_VALUE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jLabel4)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 67, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jLabel2))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addComponent(generateZipButton, javax.swing.GroupLayout.DEFAULT_SIZE, 109, Short.MAX_VALUE)
                                 .addGap(6, 6, 6))
-                            .addComponent(jLabel1)
-                            .addGroup(layout.createSequentialGroup()
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 55, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jLabel2)))))
+                            .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, 115, Short.MAX_VALUE)
+                            .addComponent(zipProgress, javax.swing.GroupLayout.Alignment.TRAILING, 0, 0, Short.MAX_VALUE)
+                            .addComponent(statusLabel))))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel2)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 87, Short.MAX_VALUE)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(zipName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel4))
+                        .addGap(30, 30, 30)
+                        .addComponent(jButton2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(statusLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(zipProgress, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -869,13 +1123,13 @@ public class Apps extends javax.swing.JFrame {
         if (systemMms.getSelectedItem().equals("AOSP Mms")) {
             String url = "http://www.rbirg.com/vibrant/kitchen/system/app/Mms-AOSP.apk";
             String source = "kitchen/system/app/Mms-AOSP.apk";
-            String target = "system/app/Mms.apk";
+            String target = systemPrefix + "Mms.apk";
             System.out.println("adding aosp mms");
             addApp(url, source, target);
         } else if (systemMms.getSelectedItem().equals("TouchWiz Mms")) {
             String url = "http://www.rbirg.com/vibrant/kitchen/system/app/Mms-TW.apk";
             String source = "kitchen/system/app/Mms-TW.apk";
-            String target = "system/app/Mms.apk";
+            String target = systemPrefix + "Mms.apk";
             addApp(url, source, target);
         } else {
             removeApp("system/app/Mms.apk");
@@ -927,7 +1181,7 @@ public class Apps extends javax.swing.JFrame {
         if (systemEmail.getSelectedItem().equals("TouchWiz Email")) {
             String url = "http://www.rbirg.com/vibrant/kitchen/system/app/Calendar-TW.apk";
             String source = "kitchen/system/app/Calendar-TW.apk";
-            String target = "system/app/Calendar.apk";
+            String target = systemPrefix + "Calendar.apk";
 
             addApp(url, source, target);
             addApp(urlBase + "/kitchen/system/app/CalendarProvider-TW.apk", "/kitchen/system/app/CalendarProvider-TW.apk", "system/app/CalendarProvider.apk");
@@ -935,7 +1189,7 @@ public class Apps extends javax.swing.JFrame {
         } else if (systemEmail.getSelectedItem().equals("AOSP Email")) {
             String url = "http://www.rbirg.com/vibrant/kitchen/system/app/Calendar-AOSP.apk";
             String source = "kitchen/system/app/Calendar-AOSP.apk";
-            String target = "system/app/Calendar.apk";
+            String target = systemPrefix + "Calendar.apk";
 
             addApp(url, source, target);
             addApp(urlBase + "/kitchen/system/app/CalendarProvider-AOSP.apk", "/kitchen/system/app/CalendarProvider-AOSP.apk", "system/app/CalendarProvider.apk");
@@ -951,27 +1205,34 @@ public class Apps extends javax.swing.JFrame {
         processMms();
         processModem();
 
-        for (DownloadFile f : files) {
-            Zip.getInstance().addToQueue(f);
-            //System.out.println("adding file to queue");
+        if (useSystem || useData || useModem || wipeDalvik) {
+            for (DownloadFile f : files) {
+                Zip.getInstance().addToQueue(f);
+                //System.out.println("adding file to queue");
+            }
+
+            Apps.getInstance().zipProgress.setVisible(true);
+            //System.out.println("sources size before zip creation: " + sources.size());
+            Zip z = new Zip(Apps.files, Apps.getInstance().zipName.getText());
+            z.addPropertyChangeListener(
+                    new PropertyChangeListener() {
+
+                        public void propertyChange(PropertyChangeEvent evt) {
+                            if ("progress".equals(evt.getPropertyName())) {
+                                Apps.getInstance().zipProgress.setValue((Integer) evt.getNewValue());
+                            }
+                        }
+                    });
+
+            z.execute();
         }
 
-        Apps.getInstance().zipProgress.setVisible(true);
-        //System.out.println("sources size before zip creation: " + sources.size());
-        Zip z = new Zip(Apps.files, Apps.getInstance().zipName.getText());
-        z.addPropertyChangeListener(
-                new PropertyChangeListener() {
+        for(DownloadFile f : filesToDownload) {
+            DownloadManager.getInstance().addToQueue(f);
+        }
+        DownloadManager dlm = DownloadManager.getInstance();
+        dlm.execute();
 
-                    public void propertyChange(PropertyChangeEvent evt) {
-                        if ("progress".equals(evt.getPropertyName())) {
-                            Apps.getInstance().zipProgress.setValue((Integer) evt.getNewValue());
-                        }
-                    }
-                });
-
-        z.execute();
-
-        unselectAll();
     }//GEN-LAST:event_generateZipButtonActionPerformed
 
     public static void copyFile(File sourceFile, File destFile) throws IOException {
@@ -993,6 +1254,11 @@ public class Apps extends javax.swing.JFrame {
                 destination.close();
             }
         }
+    }
+
+    private void addApp(DownloadFile f) {
+        File folder = new File(f.getSource());
+        files.add(f);
     }
 
     private void addApp(String s, String t) {
@@ -1057,7 +1323,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_systemMmsActionPerformed
 
     private void vibrantTmoTVActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantTmoTVActionPerformed
-        String target = "system/app/com.mobitv.client.mobitv.apk";
+        String target = systemPrefix + "com.mobitv.client.mobitv.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1069,7 +1335,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_vibrantTmoTVActionPerformed
 
     private void vibrantSlackerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantSlackerActionPerformed
-        String target = "system/app/slackerradio.apk";
+        String target = systemPrefix + "slackerradio.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1081,7 +1347,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_vibrantSlackerActionPerformed
 
     private void vibrantTelenavActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantTelenavActionPerformed
-        String target = "system/app/Telenav.apk";
+        String target = systemPrefix + "Telenav.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1093,7 +1359,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_vibrantTelenavActionPerformed
 
     private void vibrantThinkFreeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantThinkFreeActionPerformed
-        String target = "system/app/thinkdroid.apk";
+        String target = systemPrefix + "thinkdroid.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1108,7 +1374,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_VibrantVisualVoicemailActionPerformed
 
     private void vibrantWifiCallingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantWifiCallingActionPerformed
-        String target = "system/app/WiFi-Calling.apk";
+        String target = systemPrefix + "WiFi-Calling.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1126,7 +1392,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_vibrantWifiCallingActionPerformed
 
     private void vibrantMemoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantMemoActionPerformed
-        String target = "system/app/Memo.apk";
+        String target = systemPrefix + "Memo.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1138,7 +1404,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_vibrantMemoActionPerformed
 
     private void vibrantAmazonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantAmazonActionPerformed
-        String target = "system/app/AmazonMp3.apk";
+        String target = systemPrefix + "AmazonMp3.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1150,7 +1416,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_vibrantAmazonActionPerformed
 
     private void vibrantKindleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantKindleActionPerformed
-        String target = "system/app/KindleStub.apk";
+        String target = systemPrefix + "KindleStub.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1162,7 +1428,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_vibrantKindleActionPerformed
 
     private void vibrantMiniDiaryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantMiniDiaryActionPerformed
-        String target = "system/app/MiniDiary.apk";
+        String target = systemPrefix + "MiniDiary.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1174,7 +1440,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_vibrantMiniDiaryActionPerformed
 
     private void vibrantLayarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantLayarActionPerformed
-        String target = "system/app/Layar-samsung.apk";
+        String target = systemPrefix + "Layar-samsung.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1186,7 +1452,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_vibrantLayarActionPerformed
 
     private void vibrantGogoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantGogoActionPerformed
-        String target = "system/app/GoGo.apk";
+        String target = systemPrefix + "GoGo.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1198,7 +1464,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_vibrantGogoActionPerformed
 
     private void vibrantWriteandGoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantWriteandGoActionPerformed
-        String target = "system/app/WriteandGo.apk";
+        String target = systemPrefix + "WriteandGo.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1210,7 +1476,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_vibrantWriteandGoActionPerformed
 
     private void vibrantMediahubActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantMediahubActionPerformed
-        String target = "system/app/MediaHub.apk";
+        String target = systemPrefix + "MediaHub.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1222,7 +1488,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_vibrantMediahubActionPerformed
 
     private void vibrantAvatarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantAvatarActionPerformed
-        String target = "system/app/Avatar.apk";
+        String target = systemPrefix + "Avatar.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1234,7 +1500,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_vibrantAvatarActionPerformed
 
     private void vibrantAllShareActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vibrantAllShareActionPerformed
-        String target = "system/app/Dlna.apk";
+        String target = systemPrefix + "Dlna.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1272,7 +1538,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_miscDockHomeActionPerformed
 
     private void miscGingerbreadkbActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_miscGingerbreadkbActionPerformed
-        String target = "system/app/ime-mtm-stock-gingerbread.apk";
+        String target = systemPrefix + "ime-mtm-stock-gingerbread.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1298,7 +1564,7 @@ public class Apps extends javax.swing.JFrame {
 }//GEN-LAST:event_launchersZeamActionPerformed
 
     private void launcherTouchWizActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_launcherTouchWizActionPerformed
-        String target = "system/app/TouchWiz30Launcher.apk";
+        String target = systemPrefix + "TouchWiz30Launcher.apk";
         String source = "kitchen/" + target;
         String url = urlBase + source;
 
@@ -1441,17 +1707,114 @@ public class Apps extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_utilitiesDataActionPerformed
 
-    private void downloadFiles() {
-        processMms();
-        processModem();
+    private void repoListPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_repoListPropertyChange
+    }//GEN-LAST:event_repoListPropertyChange
 
-        for (DownloadFile f : files) {
-            Zip.getInstance().addToQueue(f);
-            //System.out.println("adding file to queue");
+    private void repoListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_repoListMouseClicked
+        updateRepoItemList();
+    }//GEN-LAST:event_repoListMouseClicked
+
+    private void addSelectedFilesButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addSelectedFilesButtonActionPerformed
+//        for (Object i : repoItems.getSelectedValues()) {
+//            DownloadFile dlf = (DownloadFile) i;
+//            addApp(dlf);
+//            selectedRepo.model.removeElement(i);
+//            this.writeConsoleMessage("added " + dlf.friendlyname);
+//        }
+        for (Object i : repoItems.getSelectedValues()) {
+            DownloadFile fName = (DownloadFile) i;
+            for (DownloadFile f : selectedRepo.getFiles()) {
+                if (fName.getFriendlyname().equals(f.getFriendlyname())) {
+                    if (fName.getType().equals("rom")) {
+                        filesToDownload.add(f);
+                    } else {
+                        addApp(f);
+                    }
+                }
+            }
+            selectedRepo.model.removeElement(i);
         }
-        //.out.println("starting");
-        Download1.getInstance().start();
+    }//GEN-LAST:event_addSelectedFilesButtonActionPerformed
+
+    private void updateRepoItemList() {
+        //grab the repo associated with the one selected
+        DefaultListModel m = null;
+        try {
+            selectedRepo = repos.get(repoList.getSelectedIndex());
+
+            //update the right list
+            m = selectedRepo.model;
+            m.clear();
+            //fill the list
+            if (selectedRepo == null || selectedRepo.getFiles().isEmpty()) {
+                m.addElement("No files");
+            } else {
+
+                for (DownloadFile i : selectedRepo.getFiles()) {
+                    boolean showFile = true;
+
+
+                    //check files, if it's in there, don't show
+                    for (DownloadFile f : files) {
+                        if (f.getFriendlyname().equals(i.getFriendlyname())) {
+                            showFile = false;
+                        }
+                    }
+                    //check filestodl, if it's in there don't show
+                    for (DownloadFile f : filesToDownload) {
+                        if (f.getFriendlyname().equals(i.getFriendlyname())) {
+                            showFile = false;
+                        }
+                    }
+
+                    Enumeration en = m.elements();
+                    while (en.hasMoreElements()) {
+                        DownloadFile nextElement = (DownloadFile) en.nextElement();
+                        if (nextElement.getFriendlyname().equals(i.getFriendlyname())) {
+                            showFile = false;
+                        }
+                    }
+
+                    if (showFile) {
+                        m.addElement(i);
+                    }
+                }
+            }
+            repoItems.setModel(m);
+        } catch (ArrayIndexOutOfBoundsException ex) {
+            //((DefaultListModel) repoItems.getModel()).clear();
+            selectedRepo = null;
+        } finally {
+
+            //repoItems.setSelectedIndices();
+            //System.out.println("Selected indices: " + selectedIndices);
+            repaint();
+        }
     }
+
+    private void repoItemsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_repoItemsMouseClicked
+//        updateRepoItemList();
+    }//GEN-LAST:event_repoItemsMouseClicked
+
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        unselectAll();
+
+    }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void optionsSystemAppsLocationFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_optionsSystemAppsLocationFieldActionPerformed
+        this.optionsChangeSystemLocButton.setEnabled(true);
+    }//GEN-LAST:event_optionsSystemAppsLocationFieldActionPerformed
+
+    private void optionsSystemAppsLocationFieldKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_optionsSystemAppsLocationFieldKeyTyped
+        this.optionsChangeSystemLocButton.setEnabled(true);
+    }//GEN-LAST:event_optionsSystemAppsLocationFieldKeyTyped
+
+    private void optionsChangeSystemLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_optionsChangeSystemLocButtonActionPerformed
+        unselectAll();
+        systemPrefix = this.optionsSystemAppsLocationField.getText() + "/";
+        this.optionsChangeSystemLocButton.setEnabled(false);
+        this.writeConsoleMessage("System URL Changed; please make your selections again.");
+    }//GEN-LAST:event_optionsChangeSystemLocButtonActionPerformed
 
     public void writeConsoleMessage(String s) {
         if (console.getText().equals("")) {
@@ -1487,20 +1850,29 @@ public class Apps extends javax.swing.JFrame {
     private javax.swing.ButtonGroup MmsGroup;
     private javax.swing.ButtonGroup ModemGroup;
     private javax.swing.JCheckBox VibrantVisualVoicemail;
+    private javax.swing.JButton addSelectedFilesButton;
     private javax.swing.JTextArea console;
+    private javax.swing.JPanel customFlashPanel;
     public javax.swing.JButton generateZipButton;
+    private javax.swing.JButton jButton2;
     private javax.swing.JCheckBox jCheckBox2;
     private javax.swing.JCheckBox jCheckBox5;
     private javax.swing.JFileChooser jFileChooser1;
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel10;
+    private javax.swing.JLabel jLabel11;
+    private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
-    private javax.swing.JPanel jPanel1;
+    private javax.swing.JLabel jLabel9;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JCheckBox launcherTouchWiz;
     private javax.swing.JCheckBox launchersAdw;
@@ -1511,6 +1883,13 @@ public class Apps extends javax.swing.JFrame {
     private javax.swing.JCheckBox miscCarHome;
     private javax.swing.JCheckBox miscDockHome;
     private javax.swing.JCheckBox miscGingerbreadkb;
+    private javax.swing.JButton optionsChangeSystemLocButton;
+    private javax.swing.JTextField optionsSystemAppsLocationField;
+    private javax.swing.JPanel optionsTab;
+    private javax.swing.JList repoItems;
+    private javax.swing.JList repoList;
+    private javax.swing.JPanel repoPanel;
+    public javax.swing.JLabel statusLabel;
     private javax.swing.JComboBox systemEmail;
     private javax.swing.JComboBox systemEmail1;
     private javax.swing.JComboBox systemMms;

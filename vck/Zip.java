@@ -56,7 +56,7 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
         return instance;
     }
 
-    private static boolean fileExists(DownloadFile f) {
+    public static boolean fileExists(DownloadFile f) {
         //System.out.println("checking if exists: " + f.getSource());
         File file = new File(f.getSource());
         if (file.exists()) {
@@ -107,6 +107,9 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
                         Apps.getInstance().writeConsoleMessage(wf.getTarget() + " download failed");
                         Apps.getInstance().removeApp(wf.getTarget());
                     } else {
+                        if(wf.getType().equals("rom")) {
+                            sources.remove(wf);
+                        }
                     }
                 } catch (FileNotFoundException fof) {
                     Apps.getInstance().writeConsoleMessage(wf.getTarget() + " was not found on the web server");
@@ -179,6 +182,7 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
             Apps.getInstance().writeConsoleMessage("for best practices, try opening your zip to make sure it isn't somehow corrupt :)");
             JOptionPane.showMessageDialog(null, "Please, for the love of your phone, make a Nandroid backup.", "Success!", 1);
             Apps.getInstance().zipProgress.setVisible(false);
+            Apps.getInstance().unselectAll();
         } catch (FileNotFoundException fnf) {
             //JOptionPane.showMessageDialog(null, "Improper name.", "Error!", 0);
             fnf.printStackTrace();

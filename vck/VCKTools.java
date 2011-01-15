@@ -16,17 +16,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author roman
  */
 public class VCKTools {
+
     static VCKTools instance;
 
     public VCKTools() {
@@ -82,7 +86,7 @@ public class VCKTools {
                 filesToSkip.add(s.substring(0, s.length() - 4));
                 filesToSkip.add(s);
             }
-            if(s.endsWith("update-script")) {
+            if (s.endsWith("update-script")) {
                 filesToSkip.add(s);
             }
 
@@ -114,10 +118,19 @@ public class VCKTools {
         }
     }
 
+    public static void downloadFile(DownloadFile f) {
+        try {
+            Download download = new Download(new URL(f.getUrl()));
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(VCKTools.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
     public static boolean download(DownloadFile f) throws IOException, FileNotFoundException {
         OutputStream out = null;
         URLConnection conn = null;
         InputStream in = null;
+        int downloaded = 0;
 
 
         // Get the URL
@@ -127,12 +140,20 @@ public class VCKTools {
         conn = url.openConnection();
         in = conn.getInputStream();
 
+        //set the status label
+
         // Get the data
         byte[] buffer = new byte[1024];
         int numRead;
+        
         while ((numRead = in.read(buffer)) != -1) {
             out.write(buffer, 0, numRead);
+            downloaded += numRead;
+            double percent = ((double)downloaded / conn.getContentLength())*100;
+            Apps.getInstance().statusLabel.setText("current dl: " + (int)percent + "%");
+            Apps.getInstance().statusLabel.repaint();
         }
+        Apps.getInstance().statusLabel.setText("current dl: 100%");
         // file downloaded
         try {
             if (in != null) {
