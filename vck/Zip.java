@@ -83,6 +83,7 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
                     Apps.getInstance().writeConsoleMessage("MD5 of local file: " + local);
                     new File(f.getSource()).delete();
                     new File(f.getSource() + ".md5").delete();
+                    VCKTools.createSums();
                     return false;
                 }
             } catch (IOException ex) {
@@ -100,20 +101,23 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
             //Apps.getInstance().generateZipButton.setEnabled(false);
             DownloadFile wf = dlq.poll();
 
-            if (!fileExists(wf)) {
+            if (!VCKTools.fileExists(wf)) {
                 try {
-                    Apps.getInstance().writeConsoleMessage("downloading  " + wf.getTarget());
+                    Apps.getInstance().writeConsoleMessage("downloading  " + wf.getFriendlyname());
+
                     if (!VCKTools.download(wf)) {
-                        Apps.getInstance().writeConsoleMessage(wf.getTarget() + " download failed");
+                        Apps.getInstance().writeConsoleMessage(wf.getFriendlyname() + " download failed");
                         Apps.getInstance().removeApp(wf.getTarget());
                     } else {
-                        if(wf.getType().equals("rom")) {
+                        if(wf.getType().equals("rom") || wf.getType().equals("category")) {
                             sources.remove(wf);
+                            //System.out.println("removing from zip queue: " + wf);
                         }
                     }
                 } catch (FileNotFoundException fof) {
-                    Apps.getInstance().writeConsoleMessage(wf.getTarget() + " was not found on the web server");
+                    Apps.getInstance().writeConsoleMessage(wf.getFriendlyname() + " was not found on the web server. Stopping operation. \n***Please restart program and report this bug!***");
                     Apps.getInstance().removeApp(wf.getTarget());
+                    return null;
                 } catch (IOException ioe) {
                     ioe.printStackTrace();
                 }
@@ -125,14 +129,13 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
             if (dlq.isEmpty()) {
                 Apps.getInstance().writeConsoleMessage("downloading finished!");
                 // Apps.getInstance().generateZipButton.setEnabled(true);
-                VCKTools.createSums();
+                //VCKTools.createSums();
             }
         }
 
-
         Apps.getInstance().createUpdateScript();//generate update script based on files in sources
 
-
+        Apps.getInstance().statusLabel.setText("Zipping!");
         // Create a buffer for reading the files
         byte[] buf = new byte[1024];
 
@@ -191,6 +194,9 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
         } finally {
             //Apps.zipProgress.setVisible(false);
             Apps.getInstance().removeApp("kitchen/META-INF/com/google/android/update-script");
+            Apps.getInstance().initApp();
+            Apps.getInstance().enableButton();
+            Apps.getInstance().statusLabel.setText("");
             return sources;
         }
     }
@@ -228,7 +234,7 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
                 // Apps.getInstance().generateZipButton.setEnabled(true);
             }
         } else {
-            VCKTools.createSums();
+            //VCKTools.createSums();
 
 
         }

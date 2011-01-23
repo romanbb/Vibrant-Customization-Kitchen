@@ -53,7 +53,6 @@ public class DownloadManager extends SwingWorker<List<DownloadFile>, String> {
                 Apps.getInstance().generateZipButton.setEnabled(false);
                 DownloadFile wf = dlq.poll();
                 Apps.getInstance().writeConsoleMessage("Downloading " + wf.getFriendlyname());
-                System.out.println("should have printed");
                 
                 if (!Zip.fileExists(wf)) {
                     try {
@@ -71,6 +70,7 @@ public class DownloadManager extends SwingWorker<List<DownloadFile>, String> {
 
                 if (dlq.isEmpty()) {
                     Apps.getInstance().writeConsoleMessage("downloading finished!");
+                    Apps.initApp();
                     //Apps.getInstance().generateZipButton.setEnabled(true);
                 }
             } else {

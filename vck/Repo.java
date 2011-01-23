@@ -30,7 +30,7 @@ public class Repo {
             getFileList();
             processFiles();
         } catch (IOException e) {
-            Apps.getInstance().writeConsoleMessage(upkeeper + " doesn't have a repo setup :(");
+            Apps.getInstance().writeConsoleMessage(name + " doesn't have a repo setup.");
         }
     }
 
@@ -65,7 +65,6 @@ public class Repo {
                 String target = s.next();
                 String type = s.next();
                 
-                //TODO - implement the rom functionality
 
                 files.add(new DownloadFile(url, source, target, appname, type));
             }

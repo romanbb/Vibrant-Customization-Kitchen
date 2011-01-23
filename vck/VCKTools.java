@@ -22,6 +22,7 @@ import java.net.URLConnection;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -44,6 +45,44 @@ public class VCKTools {
             instance = new VCKTools();
         }
         return instance;
+    }
+
+    public static String getFirstDirectory(String path) {
+        Scanner s = new Scanner(path);
+        s.useDelimiter("/");
+        String returner = s.next();
+        s = null;
+        return returner;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(getFirstDirectory("system/lib/libjni_latinime.so"));
+    }
+
+    public static boolean fileExists(DownloadFile f) {
+        try {
+            //System.out.println("checking if exists: " + f.getSource());
+            File localfile = new File(f.getSource());
+            URL url = new URL(f.getUrl());
+            URLConnection conn = url.openConnection();
+            if (localfile.exists()) {
+                if (conn.getContentLength() == localfile.length()) {
+                    if (f.getFriendlyname() != null) {
+                        Apps.getInstance().writeConsoleMessage(f + " matches the server, skipping.");
+                    }
+                    return true;
+                }
+            } else {
+                if (f.getFriendlyname() != null) {
+                    Apps.getInstance().writeConsoleMessage("No local file, downloading " + f);
+                }
+                return false;
+            }
+
+        } catch (IOException ex) {
+            Logger.getLogger(VCKTools.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return false;
     }
 
     public static byte[] createChecksum(String filename) throws
@@ -76,6 +115,7 @@ public class VCKTools {
     }
 
     public static void createSums() {
+        //Apps.getInstance().writeConsoleMessage("Recreating MD5 sums.");
         ArrayList<String> filesFound = new ArrayList<String>();
         filesFound.addAll(recursiveFileSearch(new File("kitchen/")));
         ArrayList<String> filesToSkip = new ArrayList<String>();
@@ -118,14 +158,13 @@ public class VCKTools {
         }
     }
 
-    public static void downloadFile(DownloadFile f) {
-        try {
-            Download download = new Download(new URL(f.getUrl()));
-        } catch (MalformedURLException ex) {
-            Logger.getLogger(VCKTools.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
+//    public static void downloadFile(DownloadFile f) {
+//        try {
+//            Download download = new Download(new URL(f.getUrl()));
+//        } catch (MalformedURLException ex) {
+//            Logger.getLogger(VCKTools.class.getName()).log(Level.SEVERE, null, ex);
+//        }
+//    }
     public static boolean download(DownloadFile f) throws IOException, FileNotFoundException {
         OutputStream out = null;
         URLConnection conn = null;
@@ -145,12 +184,12 @@ public class VCKTools {
         // Get the data
         byte[] buffer = new byte[1024];
         int numRead;
-        
+
         while ((numRead = in.read(buffer)) != -1) {
             out.write(buffer, 0, numRead);
             downloaded += numRead;
-            double percent = ((double)downloaded / conn.getContentLength())*100;
-            Apps.getInstance().statusLabel.setText("current dl: " + (int)percent + "%");
+            double percent = ((double) downloaded / conn.getContentLength()) * 100;
+            Apps.getInstance().statusLabel.setText("current dl: " + (int) percent + "%");
             Apps.getInstance().statusLabel.repaint();
         }
         Apps.getInstance().statusLabel.setText("current dl: 100%");
