@@ -1,10 +1,11 @@
-package vck;
+package acs;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 import javax.swing.DefaultListModel;
 
@@ -70,21 +71,11 @@ public class Repo {
             }
         } catch (FileNotFoundException ioex) {
             Apps.getInstance().writeConsoleMessage("Something went wrong... report bug to dev and be specific :)");
+        } catch (NoSuchElementException e) {
+            System.out.println("Error in phone: " + this.name);
         }
     }
 
-    public static void main(String[] args) {
-        try {
-            Repo r = new Repo("test", "http://rbirg.com/vibrant/dev1.txt", "roman");
-            r.processFiles();
-
-
-        } catch (FileNotFoundException ex) {
-            ex.printStackTrace();
-
-
-        }
-    }
 
     public String getName() {
         return name;
@@ -118,6 +109,14 @@ public class Repo {
 
     public String toString() {
         return name;
+    }
+
+    public static void main(String[] args) {
+        for(int i = 0; i <= 100; i += 5) {
+            double ratio = i / (double)100;
+            int value = (int)(ratio * 28);
+            System.out.println(i + " " + value);
+        }
     }
 
 }

@@ -3,9 +3,8 @@
  *
  * Created on Dec 30, 2010, 10:46:26 AM
  */
-package vck;
+package acs;
 
-import java.awt.Toolkit;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
@@ -24,6 +23,7 @@ import java.util.Scanner;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
+import javax.swing.JCheckBox;
 import javax.swing.UIManager;
 
 /**
@@ -31,13 +31,13 @@ import javax.swing.UIManager;
  * @author roman
  */
 public class Apps extends javax.swing.JFrame {
-
+    public boolean debug = true;
     //static ArrayList<String> sources = new ArrayList<String>();
     static ArrayList<DownloadFile> files = new ArrayList<DownloadFile>();
     static ArrayList<Repo> repos = new ArrayList<Repo>();
     static ArrayList<DownloadFile> filesToDownload = new ArrayList<DownloadFile>();
     static ArrayList<Phone> phones = new ArrayList<Phone>();
-    public static boolean useSystem, useData, useLib, useModem, wipeDalvik;
+    public static boolean useSystem, useData, useLib, useModem, wipeDalvik, useSD;
     static Apps instance;
     static String urlBase = "http://rbirg.com/vibrant/";
     static Repo selectedRepo = null;
@@ -45,6 +45,8 @@ public class Apps extends javax.swing.JFrame {
     static String systemPrefix = "system/app/";
     static Zip zipInstance;
     static Options optionsFrame;
+    static boolean cwm3 = false;
+    public static DownloadManager dlm;
 
     public Apps() {
         if (instance == null) {
@@ -119,14 +121,22 @@ public class Apps extends javax.swing.JFrame {
             //all repos have been added, now add to the lists!
         } catch (FileNotFoundException fnf) {
             this.writeConsoleMessage("Couldn't download the phone list from the server. \n ***Please restart the program.*****");
+            if(Apps.getInstance().debug) {
+                fnf.printStackTrace();
+            }
             //fnf.printStackTrace();
         } catch (IOException ex) {
+            if(Apps.getInstance().debug) {
+                ex.printStackTrace();
+            }
             //ex.printStackTrace();
         }
     }
 
     private void initializeRepo(Phone phone) {
+
         try {
+            this.statusLabel.setText("Loading repo list for: " + phone.getName());
             VCKTools.download(new DownloadFile(phone.getRepoListURL(), "kitchen/repo/" + phone.getName() + ".txt"));
             File masterlist = new File("kitchen/repo/" + phone.getName() + ".txt");
             Scanner s = null;
@@ -169,7 +179,7 @@ public class Apps extends javax.swing.JFrame {
         } finally {
             this.statusLabel.setText("");
         }
-
+        this.statusLabel.setText("");
     }
 
     public void enableButton() {
@@ -264,98 +274,48 @@ public class Apps extends javax.swing.JFrame {
     }
 
     public void createUpdateScript() {
-        //check whether to use data and system
-//        for (DownloadFile entry : files) {
-//            if (!useData && entry.getTarget().startsWith("data")) {
-//                useData = true;
-//                //System.out.println(entry + " setting data to true");
-//                break;
-//            }
-//            if (!useSystem && entry.getTarget().startsWith("system")) {
-//                useSystem = true;
-//                //System.out.println(entry + " setting system to true");
-//                break;
-//            }
-//        }
-
-        //writing the script
-
-
         try {
             new File("kitchen/META-INF/com/google/android/").mkdirs();
             File f = new File("kitchen/META-INF/com/google/android/update-script");
+            if (cwm3) {
+                f = new File("kitchen/META-INF/com/google/android/updater-script");
+            }
             //if(f.exists()) f.delete();
             FileWriter outFile = new FileWriter(f);
             PrintWriter out = new PrintWriter(outFile);
             int i = 1;
 
-            String systemDir;
 
+            //keep!
             for (DownloadFile dlf : files) {
                 String dir = dlf.getTarget();
-                if (dir.equals("data")) {
+                if (dir.startsWith("data")) {
                     useData = true;
-                } else if ((dir.equals("system"))) {
+                } else if ((dir.startsWith("system"))) {
                     useSystem = true;
+                } else if ((dir.startsWith("sdcard"))) {
+                    useSD = true;
+                }
+                if (dlf.getType().equals("modem")) {
+                    useModem = true;
                 }
             }
 
-            if (wipeDalvik) {
-                out.println("show_progress 0." + i + " 0");
-                out.println("delete_recursive DATA:dalvik-cache");
-                out.println("show_progress 0." + i + " 10\n");
-                i++;
-            }
-
-            if (!files.isEmpty()) {
-                out.println("show_progress 0." + i + " 0");
-            }
-            if (useData) {
-                out.println("copy_dir PACKAGE:data DATA:");
-            }
-            if (useSystem) {
-                out.println("copy_dir PACKAGE:system SYSTEM:");
-            }
-            for (DownloadFile entry : files) {
-
-                if (!useData && entry.getTarget().startsWith("data")) {
-                    useData = true;
-                    out.println("copy_dir PACKAGE:data DATA:");
-
-                }
-                if (!useSystem && entry.getTarget().startsWith("system")) {
-                    useSystem = true;
-                    out.println("copy_dir PACKAGE:system SYSTEM:");
-                    break;
-                }
-            }
-
-            out.println("show_progress 0." + i + " 10\n");
-            i++;
-
-            //modem
-            if (useModem) {
-                out.println("show_progress 0." + i + " 0");
-                out.println("copy_dir PACKAGE:updates TMP:/updates");
-                out.println("set_perm 0 0 755 TMP:/updates/redbend_ua");
-                out.println("run_program /tmp/updates/redbend_ua restore /tmp/updates/modem.bin /dev/block/bml12");
-                out.println("show_progress 0." + i + " 10");
-                i++;
-            }
-
-            //out.println("show_progress 0." + i + " 0");
-//            if (useSystem) {
-//                out.println("copy_dir PACKAGE:system SYSTEM:");
-//            }
-//            if (useData) {
-//                out.println("copy_dir PACKAGE:data DATA:");
-//            }
-            //out.println("show_progress 0." + i + " 10");
+            UpdateScript script = new UpdateScript(this.selectedPhone, cwm3);
+            out.print(script.createScript());
             out.close();
 
-            files.add(new DownloadFile(null, "kitchen/META-INF/com/google/android/update-script", "META-INF/com/google/android/update-script"));
+            if (cwm3) {
+
+                files.add(new DownloadFile(null, "kitchen/META-INF/com/google/android/updater-script", "META-INF/com/google/android/updater-script"));
+            } else {
+                files.add(new DownloadFile(null, "kitchen/META-INF/com/google/android/update-script", "META-INF/com/google/android/update-script"));
+            }
         } catch (IOException ex) {
-            ex.printStackTrace();
+            if(Apps.getInstance().debug) {
+                ex.printStackTrace();
+            }
+
             System.exit(0);
         }
     }
@@ -373,21 +333,25 @@ public class Apps extends javax.swing.JFrame {
         ModemGroup = new javax.swing.ButtonGroup();
         jFileChooser1 = new javax.swing.JFileChooser();
         jPopupMenu1 = new javax.swing.JPopupMenu();
-        repoPanel = new javax.swing.JPanel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        repoList = new javax.swing.JList();
-        jScrollPane3 = new javax.swing.JScrollPane();
-        repoItems = new javax.swing.JList();
-        jLabel9 = new javax.swing.JLabel();
-        addSelectedFilesButton = new javax.swing.JButton();
-        phoneList = new javax.swing.JComboBox();
         jLabel3 = new javax.swing.JLabel();
+        zipProgress = new javax.swing.JProgressBar();
+        phoneList = new javax.swing.JComboBox();
+        statusLabel = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
         console = new javax.swing.JTextArea();
+        jSplitPane1 = new javax.swing.JSplitPane();
+        jPanel1 = new javax.swing.JPanel();
+        jLabel9 = new javax.swing.JLabel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        repoItems = new javax.swing.JList();
+        addSelectedFilesButton = new javax.swing.JButton();
+        jPanel2 = new javax.swing.JPanel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        repoList = new javax.swing.JList();
+        jPanel3 = new javax.swing.JPanel();
         generateZipButton = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
-        zipProgress = new javax.swing.JProgressBar();
-        statusLabel = new javax.swing.JLabel();
+        jCheckBox1 = new javax.swing.JCheckBox();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem2 = new javax.swing.JMenuItem();
@@ -399,8 +363,8 @@ public class Apps extends javax.swing.JFrame {
         jFileChooser1.setDialogType(javax.swing.JFileChooser.SAVE_DIALOG);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Android Customization Suite 1.0");
-        setResizable(false);
+        setTitle("Android Customization Suite 1.2.2"); // NOI18N
+        setMinimumSize(new java.awt.Dimension(559, 400));
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
@@ -412,6 +376,86 @@ public class Apps extends javax.swing.JFrame {
             }
         });
 
+        jLabel3.setText("Choose your phone >>");
+
+        zipProgress.setFocusable(false);
+
+        phoneList.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Restart Program!", "File didnt' download" }));
+        phoneList.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                phoneListActionPerformed(evt);
+            }
+        });
+
+        statusLabel.setText("Status");
+
+        console.setColumns(20);
+        console.setEditable(false);
+        console.setFont(new java.awt.Font("Monospaced", 0, 12));
+        console.setLineWrap(true);
+        console.setRows(5);
+        console.setWrapStyleWord(true);
+        jScrollPane1.setViewportView(console);
+
+        jSplitPane1.setBorder(null);
+        jSplitPane1.setDividerLocation(140);
+        jSplitPane1.setContinuousLayout(true);
+        jSplitPane1.setDoubleBuffered(true);
+
+        jLabel9.setFont(jLabel9.getFont().deriveFont((float)12));
+        jLabel9.setText("Items (select multiple with CTRL)");
+
+        repoItems.setFont(repoItems.getFont().deriveFont((float)13));
+        repoItems.setModel(new javax.swing.AbstractListModel() {
+            String[] strings = { "Select a repo from the left", "<<<" };
+            public int getSize() { return strings.length; }
+            public Object getElementAt(int i) { return strings[i]; }
+        });
+        repoItems.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                repoItemsMouseClicked(evt);
+            }
+        });
+        jScrollPane3.setViewportView(repoItems);
+
+        addSelectedFilesButton.setText("Add Selected Files");
+        addSelectedFilesButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                addSelectedFilesButtonActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 380, Short.MAX_VALUE)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel9)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 78, Short.MAX_VALUE)
+                        .addComponent(addSelectedFilesButton)))
+                .addContainerGap())
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 93, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel9, javax.swing.GroupLayout.PREFERRED_SIZE, 27, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(addSelectedFilesButton))
+                .addContainerGap())
+        );
+
+        jSplitPane1.setRightComponent(jPanel1);
+
+        jScrollPane2.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        repoList.setFont(repoList.getFont().deriveFont((float)13));
         repoList.setModel(new javax.swing.AbstractListModel() {
             String[] strings = { "Restart program", "Please!" };
             public int getSize() { return strings.length; }
@@ -430,43 +474,26 @@ public class Apps extends javax.swing.JFrame {
         });
         jScrollPane2.setViewportView(repoList);
 
-        repoItems.setModel(new javax.swing.AbstractListModel() {
-            String[] strings = { "Select a repo from the left", "<<<" };
-            public int getSize() { return strings.length; }
-            public Object getElementAt(int i) { return strings[i]; }
-        });
-        repoItems.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                repoItemsMouseClicked(evt);
-            }
-        });
-        jScrollPane3.setViewportView(repoItems);
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 140, Short.MAX_VALUE)
+            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel2Layout.createSequentialGroup()
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 130, Short.MAX_VALUE)
+                    .addContainerGap()))
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 148, Short.MAX_VALUE)
+            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel2Layout.createSequentialGroup()
+                    .addContainerGap()
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 137, Short.MAX_VALUE)))
+        );
 
-        jLabel9.setText("Items (select multiple with CTRL)");
-
-        addSelectedFilesButton.setText("Add Selected Files");
-        addSelectedFilesButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                addSelectedFilesButtonActionPerformed(evt);
-            }
-        });
-
-        phoneList.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Restart Program!", "File didnt' download" }));
-        phoneList.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                phoneListActionPerformed(evt);
-            }
-        });
-
-        jLabel3.setText("Choose your phone >>");
-
-        console.setColumns(20);
-        console.setEditable(false);
-        console.setFont(new java.awt.Font("Monospaced", 0, 12)); // NOI18N
-        console.setLineWrap(true);
-        console.setRows(5);
-        console.setWrapStyleWord(true);
-        jScrollPane1.setViewportView(console);
+        jSplitPane1.setLeftComponent(jPanel2);
 
         generateZipButton.setText("Generate ZIP");
         generateZipButton.addActionListener(new java.awt.event.ActionListener() {
@@ -482,69 +509,32 @@ public class Apps extends javax.swing.JFrame {
             }
         });
 
-        zipProgress.setFocusable(false);
-
-        statusLabel.setText("Status");
-
-        javax.swing.GroupLayout repoPanelLayout = new javax.swing.GroupLayout(repoPanel);
-        repoPanel.setLayout(repoPanelLayout);
-        repoPanelLayout.setHorizontalGroup(
-            repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(repoPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 470, Short.MAX_VALUE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, repoPanelLayout.createSequentialGroup()
-                        .addGroup(repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 122, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, 122, Short.MAX_VALUE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, repoPanelLayout.createSequentialGroup()
-                                    .addComponent(jLabel9)
-                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(addSelectedFilesButton))
-                                .addComponent(jScrollPane3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 342, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(phoneList, 0, 342, Short.MAX_VALUE)))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, repoPanelLayout.createSequentialGroup()
-                        .addGroup(repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(zipProgress, javax.swing.GroupLayout.DEFAULT_SIZE, 225, Short.MAX_VALUE)
-                            .addComponent(statusLabel))
-                        .addGap(18, 18, 18)
-                        .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 83, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(generateZipButton, javax.swing.GroupLayout.PREFERRED_SIZE, 138, javax.swing.GroupLayout.PREFERRED_SIZE)))
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 83, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(generateZipButton, javax.swing.GroupLayout.PREFERRED_SIZE, 138, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
-        repoPanelLayout.setVerticalGroup(
-            repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(repoPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel3)
-                    .addComponent(phoneList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jLabel9, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(addSelectedFilesButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addGap(18, 18, 18)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(repoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(generateZipButton, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(repoPanelLayout.createSequentialGroup()
-                        .addComponent(statusLabel)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(zipProgress, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(generateZipButton, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(12, Short.MAX_VALUE))
         );
+
+        jCheckBox1.setText("Clockwork 3!");
+        jCheckBox1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBox1ActionPerformed(evt);
+            }
+        });
 
         jMenu1.setText("File");
 
@@ -593,11 +583,52 @@ public class Apps extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(repoPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 487, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 535, Short.MAX_VALUE)
+                        .addContainerGap())
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLabel3)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(phoneList, 0, 418, Short.MAX_VALUE)
+                        .addContainerGap())
+                    .addComponent(jSplitPane1, 0, 0, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(zipProgress, javax.swing.GroupLayout.PREFERRED_SIZE, 213, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(statusLabel)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 160, Short.MAX_VALUE)
+                                .addComponent(jCheckBox1)))
+                        .addGap(18, 18, 18)
+                        .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, 239, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap())))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(repoPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3)
+                    .addComponent(phoneList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jSplitPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 148, Short.MAX_VALUE)
+                .addGap(18, 18, 18)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(10, 10, 10)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(statusLabel)
+                            .addComponent(jCheckBox1))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(zipProgress, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(18, 18, 18)
+                        .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap())
         );
 
         pack();
@@ -620,52 +651,13 @@ public class Apps extends javax.swing.JFrame {
 //        }
 //
 //    }
-    private void processModem() {
-//        if (systemModem.getSelectedItem().equals("JL5")) {
-//            String url = "http://www.rbirg.com/vibrant/kitchen/updates/JL5.bin";
-//            String source = "kitchen/updates/JL5.bin";
-//            String target = "updates/modem.bin";
-//            addApp(url, source, target);
-//            useModem = true;
-//        } else if (systemModem.getSelectedItem().equals("JL4")) {
-//            String url = "http://www.rbirg.com/vibrant/kitchen/updates/JL4.bin";
-//            String source = "kitchen/updates/JL4.bin";
-//            String target = "updates/modem.bin";
-//            addApp(url, source, target);
-//            useModem = true;
-//        } else if (systemModem.getSelectedItem().equals("JL1")) {
-//            String url = "http://www.rbirg.com/vibrant/kitchen/updates/JL1.bin";
-//            String source = "kitchen/updates/JL1.bin";
-//            String target = "updates/modem.bin";
-//            addApp(url, source, target);
-//            useModem = true;
-//        } else if (systemModem.getSelectedItem().equals("JL4")) {
-//            String url = "http://www.rbirg.com/vibrant/kitchen/updates/JK6.bin";
-//            String source = "kitchen/updates/JK6.bin";
-//            String target = "updates/modem.bin";
-//            addApp(url, source, target);
-//            useModem = true;
-//        } else if (systemModem.getSelectedItem().equals("JK2")) {
-//            String url = "http://www.rbirg.com/vibrant/kitchen/updates/JK2.bin";
-//            String source = "kitchen/updates/JK2.bin";
-//            String target = "updates/modem.bin";
-//            addApp(url, source, target);
-//            useModem = true;
-//        } else {
-//            removeApp("update/modem.bin");
-//        }
-//        if (useModem) {
-//            addApp("http://www.rbirg.com/vibrant/kitchen/updates/redbend_ua", "kitchen/updates/redbend_ua", "updates/redbend_ua");
-//        }
+    private void processModem(DownloadFile f) {
+        if (f.getType().equals("modem")) {
+            useModem = true;
+            DownloadFile redbend = new DownloadFile("http://www.rbirg.com/vibrant/kitchen/updates/redbend_ua", "kitchen/updates/redbend_ua",  "updates/redbend_ua", "redbend", "app");
+            Zip.getInstance().addToQueue(redbend);
+        }
 
-        for (DownloadFile f : files) {
-            if (f.getType().equals("modem")) {
-                useModem = true;
-            }
-        }
-        if (useModem) {
-            addApp("http://www.rbirg.com/vibrant/kitchen/updates/redbend_ua", "kitchen/updates/redbend_ua", "updates/redbend_ua");
-        }
     }
 
 //    private void processCalendar() {
@@ -694,16 +686,27 @@ public class Apps extends javax.swing.JFrame {
         //downloadFiles();
 //        processMms();
 //        processModem();
+        dlm = new DownloadManager();
+
+
+        if (cwm3) {
+            addApp(new DownloadFile(
+                    urlBase + "kitchen/META-INF/com/google/android/update-binary",
+                    "kitchen/META-INF/com/google/android/update-binary",
+                    "META-INF/com/google/android/update-binary"));
+        }
 
 
 
         if (files.size() > 3 || useSystem || useData || wipeDalvik) {
             for (DownloadFile f : files) {
                 Zip.getInstance().addToQueue(f);
+                this.processModem(f);
             }
 
             Apps.getInstance().zipProgress.setVisible(true);
             //System.out.println("sources size before zip creation: " + sources.size());
+            //if it exists, start over!
             if (zipInstance != null) {
                 zipInstance.cancel(true);
             }
@@ -719,15 +722,30 @@ public class Apps extends javax.swing.JFrame {
                     });
 
             zipInstance.execute();
+        } else {
+            //DownloadManager dlm = new DownloadManager();
+            //dlm.dlq.clear();
+
+            processDownloads();
         }
 
-        for (DownloadFile f : filesToDownload) {
-            DownloadManager.getInstance().addToQueue(f);
-        }
-        DownloadManager dlm = DownloadManager.getInstance();
-        dlm.execute();
+
+
 
     }//GEN-LAST:event_generateZipButtonActionPerformed
+
+    public void processDownloads() {
+        for (DownloadFile f : filesToDownload) {
+            dlm.addToQueue(f);
+        }
+        if (!filesToDownload.isEmpty() && zipInstance != null) {
+
+            Apps.getInstance().writeConsoleMessage("\n****Starting downloads that are not part of " + Apps.zipInstance.name + ".zip****");
+
+
+        }
+        dlm.execute();
+    }
 
     public static void copyFile(File sourceFile, File destFile) throws IOException {
         if (!destFile.exists()) {
@@ -753,6 +771,7 @@ public class Apps extends javax.swing.JFrame {
     private void addApp(DownloadFile f) {
         //File folder = new File(f.getSource());
         files.add(f);
+        System.out.println("adding " + f);
     }
 
     private void addApp(String s, String t) {
@@ -859,6 +878,9 @@ public class Apps extends javax.swing.JFrame {
             }
             repoItems.setModel(m);
         } catch (IndexOutOfBoundsException ex) {
+            if(Apps.getInstance().debug) {
+                ex.printStackTrace();
+            }
             //((DefaultListModel) repoItems.getModel()).clear();
             selectedRepo = null;
         } finally {
@@ -869,12 +891,10 @@ public class Apps extends javax.swing.JFrame {
     }
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-
-
-        unselectAll();
         initApp();
         selectedRepo = null;
-        repoList.setSelectedIndex(0);
+        this.initializeRepo(phones.get(0));
+        this.console.setText("");
 //        this.updateRepoItemList();
     }//GEN-LAST:event_jButton2ActionPerformed
 
@@ -938,6 +958,14 @@ public class Apps extends javax.swing.JFrame {
         new About().setVisible(true);
     }//GEN-LAST:event_jMenuItem3ActionPerformed
 
+    private void jCheckBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox1ActionPerformed
+        if (((JCheckBox) evt.getSource()).isSelected()) {
+            Apps.cwm3 = true;
+        } else {
+            Apps.cwm3 = false;
+        }
+}//GEN-LAST:event_jCheckBox1ActionPerformed
+
     public void writeConsoleMessage(String s) {
         if (console.getText().equals("")) {
             console.append(s);
@@ -972,9 +1000,10 @@ public class Apps extends javax.swing.JFrame {
     private javax.swing.ButtonGroup MmsGroup;
     private javax.swing.ButtonGroup ModemGroup;
     private javax.swing.JButton addSelectedFilesButton;
-    private javax.swing.JTextArea console;
+    public javax.swing.JTextArea console;
     public javax.swing.JButton generateZipButton;
     private javax.swing.JButton jButton2;
+    private javax.swing.JCheckBox jCheckBox1;
     private javax.swing.JFileChooser jFileChooser1;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel9;
@@ -985,14 +1014,17 @@ public class Apps extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JMenuItem jMenuItem3;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
     private javax.swing.JPopupMenu jPopupMenu1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JSplitPane jSplitPane1;
     private javax.swing.JComboBox phoneList;
     private javax.swing.JList repoItems;
     private javax.swing.JList repoList;
-    private javax.swing.JPanel repoPanel;
     public javax.swing.JLabel statusLabel;
     public javax.swing.JProgressBar zipProgress;
     // End of variables declaration//GEN-END:variables

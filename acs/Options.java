@@ -8,7 +8,7 @@
  *
  * Created on Jan 21, 2011, 12:52:49 PM
  */
-package vck;
+package acs;
 
 import javax.swing.JCheckBox;
 import javax.swing.SwingUtilities;
@@ -64,6 +64,7 @@ public class Options extends javax.swing.JFrame {
         jLabel11 = new javax.swing.JLabel();
         optionsSystemAppsLocationField = new javax.swing.JTextField();
         jLabel10 = new javax.swing.JLabel();
+        jCheckBox1 = new javax.swing.JCheckBox();
 
         setTitle("Options");
         setResizable(false);
@@ -164,6 +165,14 @@ public class Options extends javax.swing.JFrame {
         jLabel10.setText("Location of system apps (make selections then change)");
         jLabel10.setName("jLabel10"); // NOI18N
 
+        jCheckBox1.setText("Clockwork 3!");
+        jCheckBox1.setName("jCheckBox1"); // NOI18N
+        jCheckBox1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBox1ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -185,11 +194,15 @@ public class Options extends javax.swing.JFrame {
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(optionsSystemAppsLocationField, javax.swing.GroupLayout.PREFERRED_SIZE, 109, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(optionsChangeSystemLocButton))
-                            .addComponent(jLabel11))
-                        .addGap(70, 70, 70)))
+                                .addComponent(optionsChangeSystemLocButton)))
+                        .addGap(70, 70, 70))
+                    .addComponent(jLabel11))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(customFlashPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(customFlashPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(10, 10, 10)
+                        .addComponent(jCheckBox1)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -211,7 +224,10 @@ public class Options extends javax.swing.JFrame {
                             .addComponent(optionsChangeSystemLocButton))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel11))
-                    .addComponent(customFlashPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(customFlashPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jCheckBox1)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -277,8 +293,18 @@ public class Options extends javax.swing.JFrame {
         SwingUtilities.updateComponentTreeUI(this);
         this.pack();
     }//GEN-LAST:event_formComponentShown
+
+    private void jCheckBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox1ActionPerformed
+        if (((JCheckBox) evt.getSource()).isSelected()) {
+            Apps.cwm3 = true;
+        } else {
+            Apps.cwm3 = false;
+        }
+    }//GEN-LAST:event_jCheckBox1ActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel customFlashPanel;
+    private javax.swing.JCheckBox jCheckBox1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;

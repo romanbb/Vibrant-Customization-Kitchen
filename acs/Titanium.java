@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package vck;
+package acs;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -96,17 +96,17 @@ public class Titanium {
 
     }
 
-    public boolean unzipApk() {
-        try {
-            //Zip.getInstance().unzipArchive(new File("titanium/" + getApkFileName()), new File("titanium/tmp"));
-            Zip.unGzip("titanium/" + getApkGzipFileName(), getApkFileName());
-
-            return false;
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        return false;
-    }
+//    public boolean unzipApk() {
+//        try {
+//            //Zip.getInstance().unzipArchive(new File("titanium/" + getApkFileName()), new File("titanium/tmp"));
+//            Zip.unGzip("titanium/" + getApkGzipFileName(), getApkFileName());
+//
+//            return false;
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//        }
+//        return false;
+//    }
 
     public boolean unzipData() {
 

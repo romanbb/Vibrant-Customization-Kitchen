@@ -2,24 +2,19 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package vck;
+package acs;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -68,96 +63,96 @@ public class VCKTools {
             if (localfile.exists()) {
                 if (conn.getContentLength() == localfile.length()) {
                     if (f.getFriendlyname() != null) {
-                        Apps.getInstance().writeConsoleMessage(f + " matches the server, skipping.");
+                        Apps.getInstance().writeConsoleMessage("Skipping " + f + ", matches the server");
                     }
                     return true;
                 }
             } else {
                 if (f.getFriendlyname() != null) {
-                    Apps.getInstance().writeConsoleMessage("No local file, downloading " + f);
+//                    Apps.getInstance().writeConsoleMessage("No local file, downloading " + f);
                 }
                 return false;
             }
 
         } catch (IOException ex) {
+            if(Apps.getInstance().debug) {
+                ex.printStackTrace();
+            }
             Logger.getLogger(VCKTools.class.getName()).log(Level.SEVERE, null, ex);
         }
         return false;
     }
 
-    public static byte[] createChecksum(String filename) throws
-            Exception {
-        InputStream fis = new FileInputStream(filename);
-
-        byte[] buffer = new byte[1024];
-        MessageDigest complete = MessageDigest.getInstance("MD5");
-        int numRead;
-        do {
-            numRead = fis.read(buffer);
-            if (numRead > 0) {
-                complete.update(buffer, 0, numRead);
-            }
-        } while (numRead != -1);
-        fis.close();
-        return complete.digest();
-    }
-
+//    public static byte[] createChecksum(String filename) throws
+//            Exception {
+//        InputStream fis = new FileInputStream(filename);
+//
+//        byte[] buffer = new byte[1024];
+//        MessageDigest complete = MessageDigest.getInstance("MD5");
+//        int numRead;
+//        do {
+//            numRead = fis.read(buffer);
+//            if (numRead > 0) {
+//                complete.update(buffer, 0, numRead);
+//            }
+//        } while (numRead != -1);
+//        fis.close();
+//        return complete.digest();
+//    }
     // see this How-to for a faster way to convert
     // a byte array to a HEX string
-    public static String getMD5Checksum(String filename) throws Exception {
-        byte[] b = createChecksum(filename);
-        String result = "";
-        for (int i = 0; i < b.length; i++) {
-            result +=
-                    Integer.toString((b[i] & 0xff) + 0x100, 16).substring(1);
-        }
-        return result;
-    }
-
-    public static void createSums() {
-        //Apps.getInstance().writeConsoleMessage("Recreating MD5 sums.");
-        ArrayList<String> filesFound = new ArrayList<String>();
-        filesFound.addAll(recursiveFileSearch(new File("kitchen/")));
-        ArrayList<String> filesToSkip = new ArrayList<String>();
-
-
-        for (String s : filesFound) {
-            if (s.endsWith(".md5")) {
-                filesToSkip.add(s.substring(0, s.length() - 4));
-                filesToSkip.add(s);
-            }
-            if (s.endsWith("update-script")) {
-                filesToSkip.add(s);
-            }
-
-        }
-
-
-        for (String s : filesFound) {
-            if (!filesToSkip.contains(s)) {
-                FileWriter fout = null;
-                try {
-                    File f = new File(s);
-                    File fmd5 = new File(s + ".md5");
-                    fout = new FileWriter(fmd5);
-                    PrintWriter out = new PrintWriter(fout);
-                    out.print(getMD5Checksum(s) + " " + f.getName());
-
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    try {
-                        fout.close();
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            }
-        }
-    }
-
+//    public static String getMD5Checksum(String filename) throws Exception {
+//        byte[] b = createChecksum(filename);
+//        String result = "";
+//        for (int i = 0; i < b.length; i++) {
+//            result +=
+//                    Integer.toString((b[i] & 0xff) + 0x100, 16).substring(1);
+//        }
+//        return result;
+//    }
+//    public static void createSums() {
+//        //Apps.getInstance().writeConsoleMessage("Recreating MD5 sums.");
+//        ArrayList<String> filesFound = new ArrayList<String>();
+//        filesFound.addAll(recursiveFileSearch(new File("kitchen/")));
+//        ArrayList<String> filesToSkip = new ArrayList<String>();
+//
+//
+//        for (String s : filesFound) {
+//            if (s.endsWith(".md5")) {
+//                filesToSkip.add(s.substring(0, s.length() - 4));
+//                filesToSkip.add(s);
+//            }
+//            if (s.endsWith("update-script")) {
+//                filesToSkip.add(s);
+//            }
+//
+//        }
+//
+//
+//        for (String s : filesFound) {
+//            if (!filesToSkip.contains(s)) {
+//                FileWriter fout = null;
+//                try {
+//                    File f = new File(s);
+//                    File fmd5 = new File(s + ".md5");
+//                    fout = new FileWriter(fmd5);
+//                    PrintWriter out = new PrintWriter(fout);
+//                    out.print(getMD5Checksum(s) + " " + f.getName());
+//
+//                } catch (IOException ex) {
+//                    ex.printStackTrace();
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                } finally {
+//                    try {
+//                        fout.close();
+//                    } catch (IOException ex) {
+//                        ex.printStackTrace();
+//                    }
+//                }
+//            }
+//        }
+//    }
 //    public static void downloadFile(DownloadFile f) {
 //        try {
 //            Download download = new Download(new URL(f.getUrl()));
@@ -166,6 +161,7 @@ public class VCKTools {
 //        }
 //    }
     public static boolean download(DownloadFile f) throws IOException, FileNotFoundException {
+        VCKTools.createProperDirectories(f);
         OutputStream out = null;
         URLConnection conn = null;
         InputStream in = null;
@@ -184,7 +180,9 @@ public class VCKTools {
         // Get the data
         byte[] buffer = new byte[1024];
         int numRead;
-
+        if (f.toString() != null) {
+            Apps.getInstance().writeConsoleMessage("Downloading " + f);
+        }
         while ((numRead = in.read(buffer)) != -1) {
             out.write(buffer, 0, numRead);
             downloaded += numRead;
@@ -192,6 +190,7 @@ public class VCKTools {
             Apps.getInstance().statusLabel.setText("current dl: " + (int) percent + "%");
             Apps.getInstance().statusLabel.repaint();
         }
+        //System.out.println("downloading " + f);
         Apps.getInstance().statusLabel.setText("current dl: 100%");
         // file downloaded
         try {
@@ -203,11 +202,34 @@ public class VCKTools {
             }
         } catch (FileNotFoundException fof) {
             Apps.getInstance().writeConsoleMessage(f.getSource() + " was not found on the web server");
+            if(Apps.getInstance().debug) {
+                fof.printStackTrace();
+            }
             return false;
         } catch (IOException ioe) {
-            ioe.printStackTrace();
+            if(Apps.getInstance().debug) {
+                ioe.printStackTrace();
+            }
+            return false;
         }
         return true;
+    }
+
+     public static void createProperDirectories(DownloadFile f) {
+        //File file = new File(f.getSource());
+        String path = f.getSource(); //gets the file path
+        int lastFolderIndex = path.lastIndexOf("/"); //finds the last occurance of \ for the folder
+        if(lastFolderIndex == -1) {
+            System.out.println(f.getSource() + " < source | index of / > " + lastFolderIndex);
+            Apps.getInstance().writeConsoleMessage("can't create the proper directory for " + f + "\n ****please report this.****");
+        } 
+        String newPath = path.substring(0, lastFolderIndex); //the path without the file name
+        if(Apps.getInstance().debug) {
+            System.out.println(newPath + " should have been made.(" + f.getUrl() + ")");
+        }
+        
+        new File(newPath).mkdirs(); //makes proper directories for the new file
+        
     }
 
     public static boolean deleteDir(File dir) {

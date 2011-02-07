@@ -2,29 +2,21 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package vck;
+package acs;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.lang.String;
-import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.zip.ZipException;
 import java.util.zip.ZipOutputStream;
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
-import org.apache.commons.io.IOUtils;
-
-
 
 /**
  *
@@ -46,6 +38,7 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
             instance = this;
         }
         sources = s;
+        sources.clear();
         this.name = name;
     }
 
@@ -56,60 +49,24 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
         return instance;
     }
 
-    public static boolean fileExists(DownloadFile f) {
-        //System.out.println("checking if exists: " + f.getSource());
-        File file = new File(f.getSource());
-        if (file.exists()) {
-            //System.out.println(f.getSource() + " exists");
-            try {
-                File newMD5 = new File("kitchen/temp.md5");
-                //newMD5.createNewFile();
-                //System.out.println("created new temp md5 file");
-                try {
-                    VCKTools.download(new DownloadFile(f.getUrl() + ".md5", "kitchen/temp.md5", f.getTarget() + ".md5"));
-                } catch (FileNotFoundException ex) {
-                    Apps.getInstance().writeConsoleMessage(f.getTarget() + " has no MD5 on the server, going to download it for funsies!");
-                    return false;
-                }
-                //check against current md5
-                String online = VCKTools.readFile("kitchen/temp.md5");
-                String local = VCKTools.readFile(f.getSource() + ".md5");
-                if (online.equals(local)) {
-                    Apps.getInstance().writeConsoleMessage(f.getTarget() + " matches the web server, skipping");
-                    return true;
-                } else {
-                    Apps.getInstance().writeConsoleMessage(f.getTarget() + " MD5 mismatch");
-                    Apps.getInstance().writeConsoleMessage("MD5 of online file: " + online);
-                    Apps.getInstance().writeConsoleMessage("MD5 of local file: " + local);
-                    new File(f.getSource()).delete();
-                    new File(f.getSource() + ".md5").delete();
-                    VCKTools.createSums();
-                    return false;
-                }
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-
-        }
-        return false;
-    }
-
     public List<DownloadFile> doInBackground() {
         //int j = 0;
+        Apps.getInstance().disableButton();
         while (!dlq.isEmpty()) {
             //Apps.getInstance().writeConsoleMessage("downloading started....");
             //Apps.getInstance().generateZipButton.setEnabled(false);
             DownloadFile wf = dlq.poll();
+            sources.add(wf);
 
             if (!VCKTools.fileExists(wf)) {
                 try {
-                    Apps.getInstance().writeConsoleMessage("downloading  " + wf.getFriendlyname());
+//                    Apps.getInstance().writeConsoleMessage("downloading  " + wf.getFriendlyname());
 
                     if (!VCKTools.download(wf)) {
                         Apps.getInstance().writeConsoleMessage(wf.getFriendlyname() + " download failed");
                         Apps.getInstance().removeApp(wf.getTarget());
                     } else {
-                        if(wf.getType().equals("rom") || wf.getType().equals("category")) {
+                        if (wf.getType().equals("rom") || wf.getType().equals("category")) {
                             sources.remove(wf);
                             //System.out.println("removing from zip queue: " + wf);
                         }
@@ -151,7 +108,13 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
             if (f.exists()) {
                 f.delete();
             }
-            ZipOutputStream out = new ZipOutputStream(new FileOutputStream(target));
+            ZipOutputStream out = null;
+            try {
+                out = new ZipOutputStream(new FileOutputStream(target));
+            } catch (FileNotFoundException fileNotFoundException) {
+                JOptionPane.showMessageDialog(null, "Error in trying to access the zip, do you have it open?", "Oh no!", 0);
+
+            }
 
             // Compress the files
             for (int i = 0; i < sources.size(); i++) {
@@ -182,20 +145,33 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
             out.close();
             Apps.getInstance().cleanUp();
             Apps.getInstance().writeConsoleMessage("zip generated!");
-            Apps.getInstance().writeConsoleMessage("for best practices, try opening your zip to make sure it isn't somehow corrupt :)");
-            JOptionPane.showMessageDialog(null, "Please, for the love of your phone, make a Nandroid backup.", "Success!", 1);
+            Apps.getInstance().writeConsoleMessage("");
+            JOptionPane.showMessageDialog(null, "Please, for the love of your phone, make a Nandroid backup."
+                    + "for best practices, try opening your zip to make sure it isn't somehow corrupt :)", "Success!", 1);
             Apps.getInstance().zipProgress.setVisible(false);
+            //Apps.getInstance().console.setText("");
+            /*
+             * now start downloads
+             */
+
+            Apps.getInstance().processDownloads();
+
+
             Apps.getInstance().unselectAll();
         } catch (FileNotFoundException fnf) {
             //JOptionPane.showMessageDialog(null, "Improper name.", "Error!", 0);
             fnf.printStackTrace();
+        } catch (ZipException ze) {
+            JOptionPane.showMessageDialog(null, "There was duplicate file in the zip and this means you need to choose your selections more carefully!\n Please select "
+                    + "\"Start Over\" and remake your selections.", "Oh no!", 0);
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
             //Apps.zipProgress.setVisible(false);
             Apps.getInstance().removeApp("kitchen/META-INF/com/google/android/update-script");
-            Apps.getInstance().initApp();
+
             Apps.getInstance().enableButton();
+            Apps.getInstance().zipProgress.setVisible(false);
             Apps.getInstance().statusLabel.setText("");
             return sources;
         }
@@ -216,7 +192,7 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
             //Apps.getInstance().generateZipButton.setEnabled(false);
             DownloadFile wf = dlq.poll();
 
-            if (!fileExists(wf)) {
+            if (!VCKTools.fileExists(wf)) {
                 try {
                     if (!VCKTools.download(wf)) {
                         System.out.println("download failed");
@@ -235,69 +211,64 @@ public class Zip extends SwingWorker<List<DownloadFile>, String> {
             }
         } else {
             //VCKTools.createSums();
-
-
         }
     }
 
     public void process() {
-        processDownload();
+        //processDownload();
     }
-
-    public void unzipArchive(File archive, File outputDir) {
-        try {
-            ZipFile zipfile = new ZipFile(archive);
-            for (Enumeration e = zipfile.entries(); e.hasMoreElements();) {
-                ZipEntry entry = (ZipEntry) e.nextElement();
-                unzipEntry(zipfile, entry, outputDir);
-            }
-        } catch (Exception e) {
-            System.out.println("Error while extracting file " + archive + ", " + e);
-            e.printStackTrace();
-        }
-    }
-
-    private void unzipEntry(ZipFile zipfile, ZipEntry entry, File outputDir) throws IOException {
-
-        if (entry.isDirectory()) {
-            createDir(new File(outputDir, entry.getName()));
-            return;
-        }
-
-        File outputFile = new File(outputDir, entry.getName());
-        if (!outputFile.getParentFile().exists()) {
-            createDir(outputFile.getParentFile());
-        }
-
-        System.out.println("Extracting: " + entry);
-        BufferedInputStream inputStream = new BufferedInputStream(zipfile.getInputStream(entry));
-        BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile));
-
-        try {
-            IOUtils.copy(inputStream, outputStream);
-        } finally {
-            outputStream.close();
-            inputStream.close();
-        }
-    }
-
-    private void createDir(File dir) {
-        System.out.println("Creating dir " + dir.getName());
-        if (!dir.mkdirs()) {
-            throw new RuntimeException("Can not create dir " + dir);
-        }
-    }
-
-    public static void unGzip(String zipIn, String fileOut) throws IOException {
-        File f = new File(zipIn );
-        GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(f));
-
-        OutputStream out = new FileOutputStream(new File(fileOut));
-
-        byte[] buf = new byte[102400]; //size can be changed according to programmer's need.
-        int len;
-        while ((len = gzipInputStream.read(buf)) > 0) {
-            out.write(buf, 0, len);
-        }
-    }
+//    public void unzipArchive(File archive, File outputDir) {
+//        try {
+//            ZipFile zipfile = new ZipFile(archive);
+//            for (Enumeration e = zipfile.entries(); e.hasMoreElements();) {
+//                ZipEntry entry = (ZipEntry) e.nextElement();
+//                unzipEntry(zipfile, entry, outputDir);
+//            }
+//        } catch (Exception e) {
+//            System.out.println("Error while extracting file " + archive + ", " + e);
+//            e.printStackTrace();
+//        }
+//    }
+//    private void unzipEntry(ZipFile zipfile, ZipEntry entry, File outputDir) throws IOException {
+//
+//        if (entry.isDirectory()) {
+//            createDir(new File(outputDir, entry.getName()));
+//            return;
+//        }
+//
+//        File outputFile = new File(outputDir, entry.getName());
+//        if (!outputFile.getParentFile().exists()) {
+//            createDir(outputFile.getParentFile());
+//        }
+//
+//        System.out.println("Extracting: " + entry);
+//        BufferedInputStream inputStream = new BufferedInputStream(zipfile.getInputStream(entry));
+//        BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile));
+//
+//        try {
+//            IOUtils.copy(inputStream, outputStream);
+//        } finally {
+//            outputStream.close();
+//            inputStream.close();
+//        }
+//    }
+//    private void createDir(File dir) {
+//        System.out.println("Creating dir " + dir.getName());
+//        if (!dir.mkdirs()) {
+//            throw new RuntimeException("Can not create dir " + dir);
+//        }
+//    }
+//
+//    public static void unGzip(String zipIn, String fileOut) throws IOException {
+//        File f = new File(zipIn );
+//        GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(f));
+//
+//        OutputStream out = new FileOutputStream(new File(fileOut));
+//
+//        byte[] buf = new byte[102400]; //size can be changed according to programmer's need.
+//        int len;
+//        while ((len = gzipInputStream.read(buf)) > 0) {
+//            out.write(buf, 0, len);
+//        }
+//    }
 }
